@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   Background,
   Controls,
@@ -13,13 +13,24 @@ import {
   type NodeProps,
   type ReactFlowInstance,
 } from '@xyflow/react';
-import { CheckCircle2, Code2, Flag, Network, Play, RefreshCw, Sparkles, XCircle } from 'lucide-react';
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Code2,
+  Flag,
+  Network,
+  Play,
+  RefreshCw,
+  Sparkles,
+  XCircle,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AssessmentData, EventCategory, GraphNodeSpec } from '../types/assessment';
-import { Panel } from './Panel';
+import { Panel, QuietButton } from './Panel';
 
-const NODE_W = 156;
-const NODE_H = 44;
+const NODE_W = 196;
+const NODE_H = 56;
 
 interface FlowNodeData extends Record<string, unknown> {
   label: string;
@@ -30,10 +41,6 @@ interface FlowNodeData extends Record<string, unknown> {
 
 type ProofNode = Node<FlowNodeData, 'proof'>;
 
-/*
- * Accent colors reference CSS custom properties so node rails and legend swatches
- * follow the active theme. `rgb(var(--c-x))` resolves in both light and dark mode.
- */
 const kindStyles: Record<
   EventCategory | 'start',
   { accent: string; icon: LucideIcon; iconClass: string }
@@ -41,8 +48,8 @@ const kindStyles: Record<
   start: { accent: 'rgb(var(--c-muted))', icon: Play, iconClass: 'text-muted' },
   navigation: { accent: 'rgb(var(--c-muted))', icon: Play, iconClass: 'text-muted' },
   'ai-prompt': { accent: 'rgb(var(--c-violet))', icon: Sparkles, iconClass: 'text-violet' },
-  'ai-response': { accent: 'rgb(var(--c-violet) / 0.7)', icon: Sparkles, iconClass: 'text-violet' },
-  question: { accent: 'rgb(var(--c-violet) / 0.7)', icon: Sparkles, iconClass: 'text-violet' },
+  'ai-response': { accent: 'rgb(var(--c-violet))', icon: Sparkles, iconClass: 'text-violet' },
+  question: { accent: 'rgb(var(--c-violet))', icon: Sparkles, iconClass: 'text-violet' },
   code: { accent: 'rgb(var(--c-accent))', icon: Code2, iconClass: 'text-accent' },
   'test-fail': { accent: 'rgb(var(--c-danger))', icon: XCircle, iconClass: 'text-danger' },
   'test-pass': { accent: 'rgb(var(--c-success))', icon: CheckCircle2, iconClass: 'text-success' },
@@ -56,24 +63,19 @@ function ProofNodeComponent({ data, selected }: NodeProps<ProofNode>) {
   return (
     <div
       style={{ width: NODE_W, minHeight: NODE_H, borderLeftColor: style.accent }}
-      className={`rounded-[7px] border border-l-[3px] bg-surface px-2 py-1.5 shadow-card ${
-        selected ? 'ring-2 ring-accent/40' : ''
+      className={`rounded-[8px] border border-l-[4px] bg-surface p-2.5 shadow-card transition-all ${
+        selected ? 'ring-2 ring-accent shadow-md' : 'hover:border-line-strong'
       }`}
     >
-      {/*
-        Non-overlapping connection points: targets on the left/top, sources on
-        the right/bottom. Each edge picks a pair so React Flow never has to
-        disambiguate two handles stacked on the same side.
-      */}
-      <Handle type="target" id="t-top" position={Position.Top} className="!h-1.5 !w-1.5 !border-0 !bg-line-strong" />
-      <Handle type="target" id="t-left" position={Position.Left} className="!h-1.5 !w-1.5 !border-0 !bg-line-strong" />
-      <div className="flex items-center gap-1.5">
-        <Icon size={11} strokeWidth={2.4} className={`shrink-0 ${style.iconClass}`} aria-hidden="true" />
-        <span className="truncate text-[10.5px] font-semibold leading-tight text-ink">{data.label}</span>
+      <Handle type="target" id="t-top" position={Position.Top} className="!h-2 !w-2 !border-0 !bg-line-strong" />
+      <Handle type="target" id="t-left" position={Position.Left} className="!h-2 !w-2 !border-0 !bg-line-strong" />
+      <div className="flex items-start gap-2">
+        <Icon size={15} strokeWidth={2.4} className={`mt-0.5 shrink-0 ${style.iconClass}`} aria-hidden="true" />
+        <span className="text-[13px] font-semibold leading-snug text-ink line-clamp-2">{data.label}</span>
       </div>
-      <p className="mt-0.5 truncate pl-[17px] font-mono text-[9px] leading-tight text-muted">{data.meta}</p>
-      <Handle type="source" id="s-right" position={Position.Right} className="!h-1.5 !w-1.5 !border-0 !bg-line-strong" />
-      <Handle type="source" id="s-bottom" position={Position.Bottom} className="!h-1.5 !w-1.5 !border-0 !bg-line-strong" />
+      <p className="mt-1 pl-[23px] font-mono text-[12px] leading-tight text-muted">{data.meta}</p>
+      <Handle type="source" id="s-right" position={Position.Right} className="!h-2 !w-2 !border-0 !bg-line-strong" />
+      <Handle type="source" id="s-bottom" position={Position.Bottom} className="!h-2 !w-2 !border-0 !bg-line-strong" />
     </div>
   );
 }
@@ -95,71 +97,66 @@ interface DecisionGraphProps {
   onSelectEventId: (eventId: string) => void;
 }
 
-function toFlowNode(spec: GraphNodeSpec): ProofNode {
-  const kind = spec.kind;
-  return {
-    id: spec.id,
-    type: 'proof',
-    position: { x: spec.x, y: spec.y },
-    data: { label: spec.label, meta: spec.meta, kind, eventId: spec.eventId },
-    draggable: true,
-    selectable: true,
-  };
-}
-
-/*
- * Routing: `forward` edges run left-to-right along a row; `down` edges step
- * into the gap below and continue on the next row, so no line ever crosses a
- * neighbouring node.
- */
-const routeHandles: Record<
-  NonNullable<AssessmentData['graph']['edges'][number]['route']>,
-  { sourceHandle: string; targetHandle: string }
-> = {
-  forward: { sourceHandle: 's-right', targetHandle: 't-left' },
-  down: { sourceHandle: 's-bottom', targetHandle: 't-top' },
-};
-
-function toFlowEdge(spec: AssessmentData['graph']['edges'][number]): Edge {
-  const retry = spec.variant === 'retry';
-  const stroke = retry ? 'rgb(var(--c-amber))' : 'rgb(var(--c-line-strong))';
-  const handles = routeHandles[spec.route ?? 'forward'];
-  return {
-    id: spec.id,
-    source: spec.source,
-    target: spec.target,
-    sourceHandle: handles.sourceHandle,
-    targetHandle: handles.targetHandle,
-    type: 'smoothstep',
-    label: spec.label,
-    labelBgPadding: [4, 2],
-    labelBgBorderRadius: 3,
-    style: retry
-      ? { stroke, strokeWidth: 1.4, strokeDasharray: '4 3' }
-      : { stroke, strokeWidth: 1.4 },
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      width: 11,
-      height: 11,
-      color: stroke,
-    },
-  };
-}
-
 export function DecisionGraph({ graph, theme, onSelectEventId }: DecisionGraphProps) {
-  const seedNodes = useMemo<ProofNode[]>(() => graph.nodes.map(toFlowNode), [graph.nodes]);
-  const seedEdges = useMemo<Edge[]>(() => graph.edges.map(toFlowEdge), [graph.edges]);
-  const [nodes, , onNodesChange] = useNodesState<ProofNode>(seedNodes);
-  const [edges, , onEdgesChange] = useEdgesState<Edge>(seedEdges);
+  // Default expanded on 1600px+ screens, collapsed on smaller per specification
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth < 1600;
+  });
+
+  const initialNodes = useMemo<ProofNode[]>(() => {
+    return graph.nodes.map((node: GraphNodeSpec) => ({
+      id: node.id,
+      type: 'proof',
+      position: { x: node.x, y: node.y },
+      data: {
+        label: node.label,
+        meta: node.meta,
+        kind: node.kind,
+        eventId: node.eventId,
+      },
+    }));
+  }, [graph.nodes]);
+
+  const initialEdges = useMemo<Edge[]>(() => {
+    return graph.edges.map((edge) => {
+      const isRetry = edge.variant === 'retry';
+      return {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        sourceHandle: edge.route === 'down' ? 's-bottom' : 's-right',
+        targetHandle: edge.route === 'down' ? 't-top' : 't-left',
+        type: 'smoothstep',
+        animated: isRetry,
+        label: edge.label,
+        style: {
+          stroke: isRetry ? '#B45309' : 'rgb(var(--c-line-strong))',
+          strokeWidth: 2,
+          strokeDasharray: isRetry ? '4,4' : undefined,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: isRetry ? '#B45309' : 'rgb(var(--c-muted))',
+          width: 14,
+          height: 14,
+        },
+      };
+    });
+  }, [graph.edges]);
+
+  const [nodes, , onNodesChange] = useNodesState<ProofNode>(initialNodes);
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   const onInit = useCallback((instance: ReactFlowInstance<ProofNode, Edge>) => {
-    instance.fitView({ padding: 0.06, maxZoom: 1.25, duration: 0 });
+    instance.fitView({ padding: 0.12, maxZoom: 1.1 });
   }, []);
 
   const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: ProofNode) => {
-      const eventId = node.data.eventId;
-      if (typeof eventId === 'string') onSelectEventId(eventId);
+    (_event: React.MouseEvent, node: ProofNode) => {
+      if (node.data.eventId) {
+        onSelectEventId(node.data.eventId);
+      }
     },
     [onSelectEventId],
   );
@@ -170,53 +167,86 @@ export function DecisionGraph({ graph, theme, onSelectEventId }: DecisionGraphPr
       icon={Network}
       subtitle="Assessment sequence"
       className="shrink-0"
-      bodyClassName="flex flex-col"
+      actions={
+        <QuietButton
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          ariaExpanded={!isCollapsed}
+          title={isCollapsed ? 'Expand graph view (290px)' : 'Collapse graph view'}
+          className="min-h-[32px] px-3 text-[13px]"
+        >
+          {isCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          <span>{isCollapsed ? 'Expand Graph' : 'Collapse Graph'}</span>
+        </QuietButton>
+      }
     >
-      <div className="min-h-0 flex-1">
-        <div className="h-full min-h-[236px] w-full">
-          <ReactFlow<ProofNode, Edge>
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            nodeTypes={nodeTypes}
-            onInit={onInit}
-            onNodeClick={onNodeClick}
-            colorMode={theme}
-            fitView
-            fitViewOptions={{ padding: 0.06, maxZoom: 1.25 }}
-            minZoom={0.3}
-            maxZoom={1.75}
-            nodesDraggable
-            nodesConnectable={false}
-            elementsSelectable
-            panOnScroll
-            preventScrolling
-            aria-label="Decision graph for the assessment session"
-          >
-            <Background gap={16} size={1} />
-            <Controls showInteractive={false} position="bottom-right" />
-          </ReactFlow>
-        </div>
-      </div>
-
-      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line bg-surface-2 px-3 py-1.5">
-        <ul className="flex flex-wrap items-center gap-x-2.5 gap-y-1" aria-label="Graph legend">
-          {legendItems.map((item) => (
-            <li key={item.label} className="flex items-center gap-1">
-              <span
-                className="h-[7px] w-[7px] shrink-0 rounded-[2px]"
-                style={{ backgroundColor: item.color }}
-                aria-hidden="true"
-              />
-              <span className="text-[9.5px] font-medium text-muted">{item.label}</span>
-            </li>
+      {isCollapsed ? (
+        /* Collapsed quick flow strip */
+        <div className="flex items-center gap-2 overflow-x-auto bg-surface px-4 py-2.5">
+          <span className="shrink-0 text-[12px] font-semibold text-muted">Flow:</span>
+          {graph.nodes.map((n, idx) => (
+            <div key={n.id} className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => n.eventId && onSelectEventId(n.eventId)}
+                className="min-h-[28px] rounded-[5px] border border-line bg-surface-2 px-2.5 py-1 text-[12px] font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+              >
+                {n.label}
+              </button>
+              {idx < graph.nodes.length - 1 ? (
+                <span className="text-[12px] text-faint">→</span>
+              ) : null}
+            </div>
           ))}
-        </ul>
-        <p className="ml-auto hidden text-[9.5px] text-faint lg:block">
-          Select a node to highlight its BuildTrail event. Dashed edge marks the debug loop.
-        </p>
-      </div>
+        </div>
+      ) : (
+        /* Lazy mount when expanded: real 290px space per design spec */
+        <>
+          <div className="h-[290px] w-full">
+            <ReactFlow<ProofNode, Edge>
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              nodeTypes={nodeTypes}
+              onInit={onInit}
+              onNodeClick={onNodeClick}
+              colorMode={theme}
+              fitView
+              fitViewOptions={{ padding: 0.12, maxZoom: 1.1 }}
+              minZoom={0.3}
+              maxZoom={1.75}
+              nodesDraggable
+              nodesConnectable={false}
+              elementsSelectable
+              panOnScroll
+              preventScrolling
+              proOptions={{ hideAttribution: true }}
+              aria-label="Decision graph for the assessment session"
+            >
+              <Background gap={18} size={1.2} />
+              <Controls showInteractive={false} position="bottom-right" />
+            </ReactFlow>
+          </div>
+
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-line bg-surface-2/60 px-4 py-2">
+            <ul className="flex flex-wrap items-center gap-x-3.5 gap-y-1" aria-label="Graph legend">
+              {legendItems.map((item) => (
+                <li key={item.label} className="flex items-center gap-1.5">
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
+                    style={{ backgroundColor: item.color }}
+                    aria-hidden="true"
+                  />
+                  <span className="text-[12px] sm:text-[13px] font-medium text-muted">{item.label}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="hidden text-[12px] text-muted xl:block">
+              Click node to inspect event in BuildTrail
+            </p>
+          </div>
+        </>
+      )}
     </Panel>
   );
 }

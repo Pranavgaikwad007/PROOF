@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bot,
   CheckCircle2,
@@ -31,56 +31,56 @@ export const categoryMeta: Record<
   },
   'ai-prompt': {
     icon: Sparkles,
-    chip: 'bg-violetSoft text-violet border-violet/20',
+    chip: 'bg-violetSoft text-violet border-violet/30',
     dot: 'bg-violet',
     iconClass: 'text-violet',
     label: 'AI prompt',
   },
   'ai-response': {
     icon: Bot,
-    chip: 'bg-violetSoft text-violet border-violet/20',
-    dot: 'bg-violet/70',
-    iconClass: 'text-violet/80',
+    chip: 'bg-violetSoft text-violet border-violet/30',
+    dot: 'bg-violet',
+    iconClass: 'text-violet',
     label: 'AI response',
   },
   code: {
     icon: Code2,
-    chip: 'bg-accentSoft text-accent border-accent/20',
+    chip: 'bg-accentSoft text-accent border-accent/30',
     dot: 'bg-accent',
     iconClass: 'text-accent',
     label: 'Code',
   },
   'test-fail': {
     icon: XCircle,
-    chip: 'bg-dangerSoft text-danger border-danger/20',
+    chip: 'bg-dangerSoft text-danger border-danger/30',
     dot: 'bg-danger',
     iconClass: 'text-danger',
     label: 'Test failed',
   },
   'test-pass': {
     icon: CheckCircle2,
-    chip: 'bg-successSoft text-success border-success/20',
+    chip: 'bg-successSoft text-success border-success/30',
     dot: 'bg-success',
     iconClass: 'text-success',
     label: 'Test passed',
   },
   question: {
     icon: MessageSquare,
-    chip: 'bg-violetSoft text-violet border-violet/20',
-    dot: 'bg-violet/50',
-    iconClass: 'text-violet/70',
+    chip: 'bg-violetSoft text-violet border-violet/30',
+    dot: 'bg-violet',
+    iconClass: 'text-violet',
     label: 'Question',
   },
   refactor: {
     icon: RefreshCw,
-    chip: 'bg-amberSoft text-amber border-amber/20',
+    chip: 'bg-amberSoft text-amber border-amber/30',
     dot: 'bg-amber',
     iconClass: 'text-amber',
     label: 'Refactor',
   },
   submission: {
     icon: Flag,
-    chip: 'bg-ink/5 text-ink border-line',
+    chip: 'bg-surface-2 text-ink border-line-strong',
     dot: 'bg-ink',
     iconClass: 'text-ink',
     label: 'Submission',
@@ -116,87 +116,93 @@ export function BuildTrail({
   highlightedEventId,
   onSelectEvent,
 }: BuildTrailProps) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const filterCount = filterOrder.length - activeCategories.size;
-  const visible = events.filter((event) => activeCategories.has(event.category));
+  const [filterOpen, setFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement | null>(null);
+
+  const visible = useMemo(
+    () => events.filter((e) => activeCategories.has(e.category)),
+    [events, activeCategories],
+  );
+
+  const allSelected = activeCategories.size === filterOrder.length;
 
   useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setOpen(false);
+    if (!filterOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
     };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
+    window.addEventListener('click', onClick);
+    return () => window.removeEventListener('click', onClick);
+  }, [filterOpen]);
+
+  useEffect(() => {
+    if (!highlightedEventId) return;
+    const el = document.getElementById(`trail-evt-${highlightedEventId}`);
+    if (el) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [highlightedEventId]);
 
   return (
     <Panel
       title="BuildTrail"
       icon={LayoutList}
-      subtitle={`${visible.length} of ${events.length} events`}
-      className="min-h-[420px] flex-1 2xl:min-h-0"
-      bodyClassName="flex flex-col"
+      subtitle={`${events.length} timeline events`}
+      className="h-full min-h-[400px] xl:min-h-0"
       actions={
-        <div className="relative" ref={menuRef}>
+        <div ref={filterRef} className="relative">
           <QuietButton
             icon={SlidersHorizontal}
-            active={open || filterCount > 0}
-            ariaExpanded={open}
-            onClick={() => setOpen((value) => !value)}
-            title="Filter events by category"
+            onClick={() => setFilterOpen((prev) => !prev)}
+            ariaExpanded={filterOpen}
+            title="Filter event categories"
+            active={!allSelected}
+            className="min-h-[32px] px-3 text-[13px]"
           >
-            {filterCount > 0 ? (
-              <span className="rounded-[4px] bg-accent px-1 text-[9px] font-bold text-white">
-                {filterCount}
+            Filter
+            {!allSelected ? (
+              <span className="flex h-5 min-w-[20px] px-1 items-center justify-center rounded-full bg-accent text-[12px] font-bold text-white">
+                {activeCategories.size}
               </span>
             ) : null}
-            <ChevronDown size={11} aria-hidden="true" />
+            <ChevronDown size={14} />
           </QuietButton>
-          {open ? (
+
+          {filterOpen ? (
             <div
-              role="menu"
+              role="dialog"
               aria-label="Filter events"
-              className="proof-fade-in absolute right-0 z-30 mt-1.5 w-56 rounded-card border border-line bg-surface p-1.5 shadow-pop"
+              className="proof-fade-in absolute right-0 top-full z-40 mt-1 w-60 rounded-[8px] border border-line bg-surface p-2 shadow-pop"
             >
-              <p className="px-2 py-1 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-faint">
-                Event categories
-              </p>
-              <ul className="max-h-64 overflow-y-auto">
-                {filterOrder.map((category) => {
-                  const meta = categoryMeta[category];
-                  const checked = activeCategories.has(category);
-                  const Icon = meta.icon;
+              <div className="flex items-center justify-between border-b border-line px-2 pb-2">
+                <span className="text-[12px] font-semibold text-ink">Categories</span>
+                <span className="font-mono text-[12px] text-muted">
+                  {activeCategories.size}/{filterOrder.length}
+                </span>
+              </div>
+              <ul className="mt-1 space-y-1 py-1">
+                {filterOrder.map((cat) => {
+                  const meta = categoryMeta[cat];
+                  const checked = activeCategories.has(cat);
                   return (
-                    <li key={category}>
+                    <li key={cat}>
                       <button
                         type="button"
-                        role="menuitemcheckbox"
-                        aria-checked={checked}
-                        onClick={() => onToggleCategory(category)}
-                        className="flex w-full items-center gap-2 rounded-[5px] px-2 py-1.5 text-left text-[11.5px] text-ink hover:bg-surface-2"
+                        onClick={() => onToggleCategory(cat)}
+                        className={`flex w-full items-center gap-2.5 rounded-[6px] px-2.5 py-1.5 text-left text-[12px] transition-colors ${
+                          checked ? 'bg-surface-2 text-ink' : 'text-muted hover:bg-surface-2/60'
+                        }`}
                       >
                         <span
-                          className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-[3px] border ${
-                            checked ? 'border-accent bg-accent' : 'border-line-strong bg-surface'
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                            checked ? 'border-accent bg-accent text-white' : 'border-line'
                           }`}
-                          aria-hidden="true"
                         >
-                          {checked ? (
-                            <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                              <path d="M1.5 5.2 4 7.5 8.5 2.5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          ) : null}
+                          {checked ? '✓' : ''}
                         </span>
-                        <Icon size={13} className={`shrink-0 ${checked ? 'text-ink' : 'text-faint'}`} aria-hidden="true" />
-                        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot}`} aria-hidden="true" />
+                        <meta.icon size={13} className={meta.iconClass} />
                         <span className={checked ? 'font-medium' : 'text-muted'}>{meta.label}</span>
                       </button>
                     </li>
@@ -207,9 +213,9 @@ export function BuildTrail({
                 <button
                   type="button"
                   onClick={onClearFilters}
-                  className="w-full rounded-[5px] px-2 py-1.5 text-left text-[11px] font-medium text-muted hover:bg-surface-2 hover:text-ink"
+                  className="w-full rounded-[6px] px-2 py-1.5 text-left text-[12px] font-medium text-muted hover:bg-surface-2 hover:text-ink"
                 >
-                  Reset filters
+                  Reset all filters
                 </button>
               </div>
             </div>
@@ -217,65 +223,75 @@ export function BuildTrail({
         </div>
       }
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+      <div className="min-h-0 flex-1 overflow-y-auto px-3.5 py-3.5">
         {visible.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 py-10 text-center">
-            <FileText size={18} className="text-faint" aria-hidden="true" />
-            <p className="text-[12px] font-medium text-ink">No events match the filter</p>
-            <p className="max-w-[200px] text-[11px] text-muted">
-              Enable one or more categories to restore the timeline.
+          <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center">
+            <FileText size={22} className="text-faint" aria-hidden="true" />
+            <p className="text-[14px] font-medium text-ink">No events match the filter</p>
+            <p className="max-w-[240px] text-[13px] text-muted">
+              Enable one or more categories above to restore timeline events.
             </p>
-            <QuietButton onClick={onClearFilters} className="mt-1">
+            <QuietButton onClick={onClearFilters} className="mt-2">
               Reset filters
             </QuietButton>
           </div>
         ) : (
           <ol className="relative">
-            <span className="absolute bottom-2 left-[9px] top-2 w-px bg-line" aria-hidden="true" />
+            {/* 2px connecting vertical line */}
+            <span className="absolute bottom-3 left-[11px] top-3 w-[2px] bg-line" aria-hidden="true" />
             {visible.map((event) => {
               const meta = categoryMeta[event.category];
               const Icon = meta.icon;
               const highlighted = event.id === highlightedEventId;
               return (
-                <li key={event.id} className="relative pl-7">
+                <li key={event.id} id={`trail-evt-${event.id}`} className="relative pl-8">
+                  {/* 11px timeline dot */}
                   <span
-                    className={`absolute left-0 top-[13px] z-10 flex h-[18px] w-[18px] items-center justify-center rounded-full border bg-surface ${
-                      highlighted ? 'border-accent ring-2 ring-accent/25' : 'border-line'
+                    className={`absolute left-0 top-[14px] z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full border bg-surface transition-all ${
+                      highlighted
+                        ? 'border-accent ring-4 ring-accent/20 shadow-sm'
+                        : 'border-line'
                     }`}
                     aria-hidden="true"
                   >
-                    <Icon size={9} className={meta.iconClass} strokeWidth={2.4} />
+                    <Icon size={11} className={meta.iconClass} strokeWidth={2.4} />
                   </span>
+
                   <button
                     type="button"
                     onClick={() => onSelectEvent(event)}
-                    className={`mb-2 block w-full rounded-[6px] border px-2.5 py-2 text-left transition-colors ${
+                    title={`Event ID: ${event.id}${event.ref ? ` (${event.ref})` : ''}`}
+                    className={`mb-3 block w-full rounded-card border p-3.5 text-left transition-all focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
                       highlighted
-                        ? 'border-accent/40 bg-accentSoft/60'
-                        : 'border-transparent hover:border-line hover:bg-surface-2'
+                        ? 'border-l-[3px] border-l-accent border-y-accent/40 border-r-accent/40 bg-accentSoft/70 shadow-sm'
+                        : 'border-line bg-surface hover:border-line-strong hover:bg-surface-2'
                     }`}
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span className="shrink-0 font-mono text-[10px] tabular-nums text-faint">
+                    {/* Time, event type chip, and revision indicator */}
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[12px] font-medium tabular-nums text-muted">
                         {event.time}
                       </span>
                       <span
-                        className={`inline-flex shrink-0 items-center gap-1 rounded-[4px] border px-1 py-px text-[9px] font-semibold leading-[1.4] ${meta.chip}`}
+                        className={`inline-flex shrink-0 items-center gap-1.5 rounded-[5px] border px-2 py-0.5 text-[12px] font-semibold leading-normal ${meta.chip}`}
                       >
                         {meta.label}
                       </span>
                       {event.revision ? (
-                        <span className="ml-auto shrink-0 font-mono text-[9px] font-semibold text-faint">
+                        <span className="ml-auto font-mono text-[12px] font-bold text-accent">
                           {event.revision}
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-[11.5px] font-semibold leading-snug text-ink">
+
+                    {/* Event title 14px semibold */}
+                    <p className="mt-2 text-[14px] font-semibold leading-snug text-ink">
                       {event.title}
                     </p>
-                    <p className="mt-0.5 text-[11px] leading-snug text-muted">{event.detail}</p>
-                    <p className="mt-1.5 font-mono text-[9px] leading-none text-faint">
-                      {event.ref}
+
+                    {/* One-line description 13px */}
+                    <p className="mt-1 line-clamp-1 text-[13px] leading-relaxed text-muted">
+                      {event.detail}
                     </p>
                   </button>
                 </li>

@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         String    @default("candidate") // "candidate" | "recruiter" | "admin"
+  name         String
+  initials     String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions     Session[]
+
+  @@map("users")
+}
+
+model Assessment {
+  id              String    @id @default(cuid())
+  title           String
+  role            String    // e.g. "Backend Engineering · L3"
+  problem         String
+  starterCode     String?
+  starterFilename String    @default("solution.py")
+  language        String    @default("python")
+  timeLimit       String    @default("01:30:00")
+  aiPolicy        Int       @default(3) // 1=Clarify, 2=Guide, 3=Verify, 4=Generate
+  rubricJson      String    // JSON string of rubric weights and criteria
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  sessions        Session[]
+
+  @@map("assessments")
+}
+
+model Session {
+  id                          String             @id @default(cuid())
+  submissionId                String             @unique // e.g. "ASM-2041-TSSA"
+  assessmentId                String
+  assessment                  Assessment         @relation(fields: [assessmentId], references: [id])
+  candidateId                 String
+  candidate                   User               @relation(fields: [candidateId], references: [id])
+  status                      String             @default("In Progress") // "In Progress" | "Completed" | "Pending Review"
+  startedAt                   String             // "16 Oct 2026, 10:42 AM"
+  duration                    String             @default("00:00:00")
+  recordingDisclosureAccepted Boolean            @default(true)
+  aiPolicyLevel               Int                @default(3)
+  createdAt                   DateTime           @default(now())
+  updatedAt                   DateTime           @updatedAt
+
+  events                      SessionEvent[]
+  revisions                   CodeRevision[]
+  testResults                 TestResult[]
+  aiExchanges                 AiExchangeRecord[]
+  skillResults                SkillResult[]
+  report                      Report?
+
+  @@map("sessions")
+}
+
+model SessionEvent {
+  id         String   @id @default(cuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  seq        Int
+  timestamp  String   // "10:42:03"
+  category   String   // 'navigation' | 'ai-prompt' | 'ai-response' | 'code' | 'test-fail' | 'test-pass' | 'question' | 'refactor' | 'submission'
+  title      String
+  detail     String
+  ref        String   // "evt_01HQ8K2M"
+  revisionId String?  // "R1", "R2"
+  evidenceId String?  // "ev-failed-test"
+  createdAt  DateTime @default(now())
+
+  @@map("session_events")
+}
+
+model CodeRevision {
+  id                 String   @id @default(cuid())
+  sessionId          String
+  session            Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  revisionId         String   // "R1", "R2", "R3"
+  label              String
+  timestamp          String
+  filename           String   @default("solution.py")
+  language           String   @default("python")
+  summary            String
+  previousRevisionId String?  // Parent link: "R1" or null
+  additions          Int      @default(0)
+  deletions          Int      @default(0)
+  linesJson          String   // JSON of DiffLine[]
+  annotationsJson    String   // JSON of CodeAnnotation[]
+  passedCount        Int      @default(0)
+  totalCount         Int      @default(0)
+  duration           String   @default("0.04s")
+  createdAt          DateTime @default(now())
+
+  @@map("code_revisions")
+}
+
+model TestResult {
+  id         String   @id @default(cuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  runId      String   // "run-01"
+  label      String
+  timestamp  String
+  revisionId String   // "R1"
+  passed     Boolean
+  summary    String   // "1 failed, 3 passed in 0.04s"
+  output     String
+  createdAt  DateTime @default(now())
+
+  @@map("test_results")
+}
+
+model AiExchangeRecord {
+  id              String   @id @default(cuid())
+  sessionId       String
+  session         Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exchangeId      String   // "ai-01"
+  role            String   // "candidate" | "ai"
+  timestamp       String
+  text            String
+  eventId         String
+  relatedRevision String?
+  assistanceLevel Int?
+  createdAt       DateTime @default(now())
+
+  @@map("ai_exchanges")
+}
+
+model SkillResult {
+  id                  String         @id @default(cuid())
+  sessionId           String
+  session             Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  findingId           String         // "finding-03"
+  title               String         // "Validation & Debugging"
+  status              String         // "Demonstrated" | "Partial" | "Not observed"
+  observation         String
+  confidence          String         // "High" | "Medium" | "Low"
+  impact              String         // "High" | "Medium" | "Low"
+  score               Float          @default(0)
+  sourceLinks         Int            @default(0)
+  aiContributionLabel String
+  aiContributionText  String
+  uncertaintyLabel    String
+  uncertaintyText     String
+  tagsJson            String         // JSON array of strings
+  createdAt           DateTime       @default(now())
+
+  evidence            EvidenceItem[]
+
+  @@map("skill_results")
+}
+
+model EvidenceItem {
+  id          String       @id @default(cuid())
+  findingId   String?
+  finding     SkillResult? @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  evidenceId  String       // "ev-failed-test"
+  kind        String       // "test" | "revision" | "interaction"
+  title       String
+  meta        String
+  detail      String
+  action      String       // "output" | "diff" | "interaction"
+  actionLabel String       // "View Output", "View Diff", "View Interaction"
+  revisionId  String?
+  eventId     String       // source_event_ids
+  createdAt   DateTime     @default(now())
+
+  @@map("evidence_items")
+}
+
+model Report {
+  id                 String   @id @default(cuid())
+  sessionId          String   @unique
+  session            Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  markdownContent    String
+  summaryMetricsJson String   // JSON array of SummaryMetric
+  graphJson          String   // JSON of { nodes: GraphNodeSpec[], edges: GraphEdgeSpec[] }
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("reports")
+}

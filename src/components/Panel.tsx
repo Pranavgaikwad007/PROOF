@@ -11,26 +11,34 @@ interface PanelProps {
   bodyClassName?: string;
 }
 
-export function Panel({ title, icon: Icon, subtitle, actions, children, className = '', bodyClassName = '' }: PanelProps) {
+export function Panel({
+  title,
+  icon: Icon,
+  subtitle,
+  actions,
+  children,
+  className = '',
+  bodyClassName = '',
+}: PanelProps) {
   return (
     <section
       className={`flex min-w-0 flex-col overflow-hidden rounded-card border border-line bg-surface shadow-card ${className}`}
     >
-      <header className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-2">
+      <header className="flex min-h-[46px] shrink-0 items-center gap-2.5 border-b border-line px-4 py-2.5">
         {Icon ? (
-          <Icon size={14} className="shrink-0 text-muted" strokeWidth={2} aria-hidden="true" />
+          <Icon size={16} className="shrink-0 text-muted" strokeWidth={2} aria-hidden="true" />
         ) : null}
         <div className="flex min-w-0 items-baseline gap-2">
-          <h2 className="shrink-0 whitespace-nowrap text-[12px] font-semibold tracking-[0.01em] text-ink">
+          <h2 className="shrink-0 whitespace-nowrap text-[15px] sm:text-[16px] font-semibold tracking-[-0.01em] text-ink">
             {title}
           </h2>
           {subtitle ? (
-            <span className="hidden min-w-0 truncate text-[11px] text-muted sm:inline">{subtitle}</span>
+            <span className="hidden min-w-0 truncate text-[13px] text-muted sm:inline">{subtitle}</span>
           ) : null}
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">{actions}</div>
+        <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>
       </header>
-      <div className={`min-h-0 flex-1 ${bodyClassName}`}>{children}</div>
+      <div className={`flex min-h-0 flex-1 flex-col ${bodyClassName}`}>{children}</div>
     </section>
   );
 }
@@ -43,17 +51,17 @@ interface BadgeProps {
 
 const toneClasses: Record<NonNullable<BadgeProps['tone']>, string> = {
   neutral: 'border-line bg-surface-2 text-muted',
-  accent: 'border-accent/20 bg-accentSoft text-accent',
-  success: 'border-success/20 bg-successSoft text-success',
-  danger: 'border-danger/20 bg-dangerSoft text-danger',
-  violet: 'border-violet/20 bg-violetSoft text-violet',
-  amber: 'border-amber/20 bg-amberSoft text-amber',
+  accent: 'border-accent/25 bg-accentSoft text-accent',
+  success: 'border-success/30 bg-successSoft text-success',
+  danger: 'border-danger/30 bg-dangerSoft text-danger',
+  violet: 'border-violet/30 bg-violetSoft text-violet',
+  amber: 'border-amber/30 bg-amberSoft text-amber',
 };
 
 export function Badge({ children, tone = 'neutral', className = '' }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-[5px] border px-1.5 py-[2px] text-[10px] font-semibold leading-none tracking-[0.02em] ${toneClasses[tone]} ${className}`}
+      className={`inline-flex min-h-[24px] items-center gap-1.5 rounded-[6px] border px-2.5 py-0.5 text-[12px] font-semibold leading-none tracking-[0.01em] ${toneClasses[tone]} ${className}`}
     >
       {children}
     </span>
@@ -69,6 +77,7 @@ interface QuietButtonProps {
   ariaExpanded?: boolean;
   active?: boolean;
   className?: string;
+  primary?: boolean;
 }
 
 export function QuietButton({
@@ -80,6 +89,7 @@ export function QuietButton({
   ariaExpanded,
   active = false,
   className = '',
+  primary = false,
 }: QuietButtonProps) {
   return (
     <button
@@ -88,13 +98,17 @@ export function QuietButton({
       title={title}
       aria-label={ariaLabel ?? (typeof children === 'string' ? children : title)}
       aria-expanded={ariaExpanded}
-      className={`inline-flex h-7 items-center gap-1.5 rounded-[6px] border px-2 text-[11px] font-medium transition-colors ${
-        active
-          ? 'border-accent/30 bg-accentSoft text-accent'
-          : 'border-line bg-surface text-muted hover:border-line-strong hover:bg-surface-2 hover:text-ink'
+      className={`inline-flex items-center justify-center gap-2 rounded-[6px] border text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${
+        primary
+          ? 'min-h-[38px] px-4 bg-accent text-white border-accent hover:bg-accent/90 shadow-sm'
+          : `min-h-[32px] px-3.5 ${
+              active
+                ? 'border-accent/40 bg-accentSoft text-accent font-semibold'
+                : 'border-line bg-surface text-muted hover:border-line-strong hover:bg-surface-2 hover:text-ink'
+            }`
       } ${className}`}
     >
-      {Icon ? <Icon size={13} strokeWidth={2} aria-hidden="true" /> : null}
+      {Icon ? <Icon size={14} strokeWidth={2} aria-hidden="true" /> : null}
       {children}
     </button>
   );

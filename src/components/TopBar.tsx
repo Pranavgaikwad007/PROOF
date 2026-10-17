@@ -1,38 +1,95 @@
-import { Download, Menu, Moon, Share2, Sun } from 'lucide-react';
+import {
+  Download,
+  Keyboard,
+  Menu,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Share2,
+  Sun,
+} from 'lucide-react';
 import type { CandidateInfo } from '../types/assessment';
 import { QuietButton } from './Panel';
 
 interface TopBarProps {
   candidate: CandidateInfo;
+  activeNav?: string;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onExport: () => void;
   onShare: () => void;
   onOpenMenu: () => void;
+  onOpenSwitcher?: () => void;
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
+  onOpenShortcuts?: () => void;
 }
 
-export function TopBar({ candidate, theme, onToggleTheme, onExport, onShare, onOpenMenu }: TopBarProps) {
-  const crumbs = ['Assessments', candidate.assessment, 'Evidence Inspector'];
+const navLabels: Record<string, string> = {
+  overview: 'Overview',
+  buildtrail: 'BuildTrail',
+  'evidence-inspector': 'Evidence Inspector',
+  'decision-graph': 'Decision Graph',
+  'ai-interactions': 'AI Interactions',
+  'test-results': 'Test Results',
+  'code-revisions': 'Code Revisions',
+  reports: 'Reports',
+  feedback: 'Feedback',
+};
+
+export function TopBar({
+  candidate,
+  activeNav = 'evidence-inspector',
+  theme,
+  onToggleTheme,
+  onExport,
+  onShare,
+  onOpenMenu,
+  onOpenSwitcher,
+  sidebarCollapsed = false,
+  onToggleSidebar,
+  onOpenShortcuts,
+}: TopBarProps) {
+  const currentNavTitle = navLabels[activeNav] || 'Evidence Inspector';
+  const crumbs = ['Assessments', candidate.assessment, currentNavTitle];
 
   return (
-    <header className="flex shrink-0 items-center gap-3 border-b border-line bg-surface px-3 py-2 sm:px-4">
+    <header className="flex h-[52px] shrink-0 items-center gap-3.5 border-b border-line bg-surface px-4 sm:px-5">
+      {/* Mobile drawer toggle */}
       <button
         type="button"
         onClick={onOpenMenu}
         aria-label="Open navigation"
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-line text-muted hover:bg-surface-2 hover:text-ink lg:hidden"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] border border-line text-muted hover:bg-surface-2 hover:text-ink lg:hidden"
       >
-        <Menu size={15} aria-hidden="true" />
+        <Menu size={16} aria-hidden="true" />
       </button>
 
+      {/* Desktop sidebar rail toggle */}
+      {onToggleSidebar ? (
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          aria-label={sidebarCollapsed ? 'Expand sidebar ( [ )' : 'Collapse sidebar ( [ )'}
+          title={sidebarCollapsed ? 'Expand sidebar ( [ )' : 'Collapse sidebar ( [ )'}
+          className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-[6px] border border-line text-muted transition-colors hover:border-line-strong hover:bg-surface-2 hover:text-ink lg:flex focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          {sidebarCollapsed ? (
+            <PanelLeftOpen size={16} aria-hidden="true" />
+          ) : (
+            <PanelLeftClose size={16} aria-hidden="true" />
+          )}
+        </button>
+      ) : null}
+
       <nav aria-label="Breadcrumb" className="min-w-0">
-        <ol className="flex min-w-0 items-center gap-1.5 text-[11.5px]">
+        <ol className="flex min-w-0 items-center gap-2 text-[13px]">
           {crumbs.map((crumb, index) => {
             const last = index === crumbs.length - 1;
             return (
-              <li key={crumb} className="flex min-w-0 items-center gap-1.5">
+              <li key={crumb} className="flex min-w-0 items-center gap-2">
                 {index > 0 ? (
-                  <span className="text-faint" aria-hidden="true">
+                  <span className="text-line-strong" aria-hidden="true">
                     /
                   </span>
                 ) : null}
@@ -43,7 +100,9 @@ export function TopBar({ candidate, theme, onToggleTheme, onExport, onShare, onO
                 ) : (
                   <button
                     type="button"
-                    className="truncate rounded text-muted transition-colors hover:text-accent"
+                    onClick={onOpenSwitcher}
+                    title="Switch assessment"
+                    className="truncate rounded text-muted transition-colors hover:text-accent hover:underline"
                   >
                     {crumb}
                   </button>
@@ -52,39 +111,59 @@ export function TopBar({ candidate, theme, onToggleTheme, onExport, onShare, onO
             );
           })}
         </ol>
-        <p className="mt-0.5 hidden text-[10px] text-muted md:block">
-          Submission <span className="font-medium text-ink">{candidate.submissionId}</span>
-        </p>
       </nav>
 
-      <div className="ml-auto flex shrink-0 items-center gap-1.5">
-        <QuietButton icon={Download} onClick={onExport} title="Download a sample Markdown report">
+      <span className="hidden items-center gap-1.5 font-mono text-[12px] text-muted xl:flex">
+        <span className="h-2 w-2 rounded-full bg-success" />
+        {candidate.submissionId}
+      </span>
+
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        <QuietButton icon={Download} onClick={onExport} title="Download evaluation report (Press E)">
           <span className="hidden sm:inline">Export Report</span>
           <span className="sm:hidden">Export</span>
         </QuietButton>
-        <QuietButton icon={Share2} onClick={onShare} title="Copy a shareable link to this assessment">
+
+        <QuietButton icon={Share2} onClick={onShare} title="Copy shareable link">
           <span className="hidden sm:inline">Share</span>
         </QuietButton>
+
+        {onOpenShortcuts ? (
+          <button
+            type="button"
+            onClick={onOpenShortcuts}
+            title="Desktop keyboard shortcuts (Press ?)"
+            aria-label="Keyboard shortcuts"
+            className="hidden min-h-[32px] items-center gap-1.5 rounded-[6px] border border-line bg-surface px-2.5 text-muted transition-colors hover:border-line-strong hover:bg-surface-2 hover:text-ink sm:flex focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <Keyboard size={15} strokeWidth={2} aria-hidden="true" />
+            <kbd className="font-mono text-[12px] font-bold text-muted">?</kbd>
+          </button>
+        ) : null}
+
         <button
           type="button"
           onClick={onToggleTheme}
-          aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
-          title={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
-          className="flex h-7 w-7 items-center justify-center rounded-[6px] border border-line bg-surface text-muted transition-colors hover:border-line-strong hover:bg-surface-2 hover:text-ink"
+          aria-label={theme === 'light' ? 'Switch to dark theme (Press T)' : 'Switch to light theme (Press T)'}
+          title={theme === 'light' ? 'Switch to dark theme (Press T)' : 'Switch to light theme (Press T)'}
+          className="flex h-8 w-8 items-center justify-center rounded-[6px] border border-line bg-surface text-muted transition-colors hover:border-line-strong hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-accent"
         >
           {theme === 'light' ? (
-            <Moon size={13} strokeWidth={2} aria-hidden="true" />
+            <Moon size={15} strokeWidth={2} aria-hidden="true" />
           ) : (
-            <Sun size={13} strokeWidth={2} aria-hidden="true" />
+            <Sun size={15} strokeWidth={2} aria-hidden="true" />
           )}
         </button>
-        <div className="ml-1 flex items-center gap-2 border-l border-line pl-2">
-          <span
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-ink text-[10px] font-bold text-surface"
-            title={candidate.name}
+
+        <div className="ml-1 flex items-center gap-2 border-l border-line pl-2.5">
+          <button
+            type="button"
+            onClick={onOpenSwitcher}
+            title={`Active: ${candidate.name} (Click to switch)`}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-ink text-[12px] font-bold text-surface ring-2 ring-transparent transition-all hover:ring-accent focus-visible:ring-2 focus-visible:ring-accent"
           >
             {candidate.initials}
-          </span>
+          </button>
         </div>
       </div>
     </header>

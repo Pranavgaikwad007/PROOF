@@ -40,3 +40,9 @@ Thumbs.db
 *.tsbuildinfo
 .vite
 .eslintcache
+
+# SQLite Databases
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3

@@ -17,6 +17,10 @@ interface AppLayoutProps {
   sidebarOpen: boolean;
   onOpenSidebar: () => void;
   onCloseSidebar: () => void;
+  onOpenSwitcher?: () => void;
+  sidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
+  onOpenShortcuts?: () => void;
   children: ReactNode;
 }
 
@@ -32,6 +36,10 @@ export function AppLayout({
   sidebarOpen,
   onOpenSidebar,
   onCloseSidebar,
+  onOpenSwitcher,
+  sidebarCollapsed = false,
+  onToggleSidebar,
+  onOpenShortcuts,
   children,
 }: AppLayoutProps) {
   useEffect(() => {
@@ -44,11 +52,24 @@ export function AppLayout({
   }, [sidebarOpen, onCloseSidebar]);
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-canvas">
-      <aside className="hidden w-[228px] shrink-0 lg:block 2xl:w-[248px]">
-        <Sidebar candidate={candidate} activeNav={activeNav} onNavSelect={onNavSelect} onBack={onBack} />
+    <div className="flex h-dvh w-screen overflow-hidden bg-canvas">
+      {/* Desktop Sidebar with collapsible rail animation */}
+      <aside
+        className={`hidden shrink-0 transition-all duration-200 lg:block ${
+          sidebarCollapsed ? 'w-[56px]' : 'w-[240px]'
+        }`}
+      >
+        <Sidebar
+          candidate={candidate}
+          activeNav={activeNav}
+          onNavSelect={onNavSelect}
+          onBack={onBack}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={onToggleSidebar}
+        />
       </aside>
 
+      {/* Mobile Drawer */}
       {sidebarOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
@@ -84,17 +105,22 @@ export function AppLayout({
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopBar
           candidate={candidate}
+          activeNav={activeNav}
           theme={theme}
           onToggleTheme={onToggleTheme}
           onExport={onExport}
           onShare={onShare}
           onOpenMenu={onOpenSidebar}
+          onOpenSwitcher={onOpenSwitcher}
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebar={onToggleSidebar}
+          onOpenShortcuts={onOpenShortcuts}
         />
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          <div className="mx-auto flex w-full min-h-0 max-w-[1720px] flex-1 flex-col px-3 py-3 sm:px-4 sm:py-4">
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto xl:overflow-hidden">
+          <div className="flex w-full min-h-0 flex-1 flex-col px-3 py-2.5 sm:px-4 sm:py-3">
             {children}
           </div>
         </main>

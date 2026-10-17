@@ -46,3 +46,6 @@ Thumbs.db
 *.db-journal
 *.sqlite
 *.sqlite3
+
+# Vercel local project link (contains org/project ids, machine-local)
+.vercel

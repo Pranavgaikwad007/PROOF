@@ -145,7 +145,7 @@ export function AiInteractionsView({
             </button>
           </form>
           <p className="mt-2 text-[12px] text-muted">
-            Responses are policy-gated at Level 3 (Verify & Guide). Inquiries are recorded into the BuildTrail.
+            Responses are policy-gated at Level 3 · Verify (Levels 1-2 included). Inquiries are recorded into the BuildTrail.
           </p>
         </div>
       </Panel>

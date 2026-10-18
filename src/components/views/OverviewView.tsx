@@ -86,8 +86,7 @@ export function OverviewView({ data, onNavigate }: OverviewViewProps) {
               AI Collaboration Policy
             </div>
             <p className="mt-2.5 text-[13px] leading-relaxed text-muted">
-              AI Coach assistance permitted at <strong>Level 3 (Verify & Guide)</strong>. Full code
-              generation is restricted to ensure authentic problem solving.
+              Assistance up to <strong>Level 3 (Verify)</strong>; Level 4 code generation disabled to ensure authentic problem solving.
             </p>
           </div>
 

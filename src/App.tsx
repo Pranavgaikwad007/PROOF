@@ -47,8 +47,20 @@ function getHashSubmissionId(): string | null {
   return null;
 }
 
+function getInitialNav(): NavItemId {
+  if (typeof window === 'undefined') return 'overview';
+  const hash = window.location.hash.toLowerCase();
+  if (hash.includes('overview')) return 'overview';
+  if (hash.includes('evidence')) return 'evidence-inspector';
+  if (hash.includes('buildtrail')) return 'buildtrail';
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab') as NavItemId;
+  if (tab) return tab;
+  return 'overview';
+}
+
 export default function App() {
-  const [activeNav, setActiveNav] = useState<NavItemId>('evidence-inspector');
+  const [activeNav, setActiveNav] = useState<NavItemId>(() => getInitialNav());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;

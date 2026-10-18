@@ -391,10 +391,10 @@ tests/test_task_manager.py .....
     edges: graphEdges,
   },
   summary: [
-    { id: 'm-1', label: 'Objective Results', value: '5/5', sub: 'tests passed', tone: 'success' },
-    { id: 'm-2', label: 'Performance', value: '01:12:30', sub: 'total duration', tone: 'neutral' },
-    { id: 'm-3', label: 'Evidence Coverage', value: '82%', sub: 'events linked to findings', tone: 'accent' },
-    { id: 'm-4', label: 'Observations', value: '6', sub: 'key findings', tone: 'violet' },
-    { id: 'm-5', label: 'Review Status', value: 'Passed', sub: 'evaluated & confirmed', tone: 'success' },
+    { id: 'm-1', label: 'Tests', value: '5/5', sub: '5/5 passed', tone: 'success' },
+    { id: 'm-2', label: 'Duration', value: '01:12:30', sub: 'total duration', tone: 'neutral' },
+    { id: 'm-3', label: 'Coverage', value: '82%', sub: 'linked to findings', tone: 'neutral' },
+    { id: 'm-4', label: 'Findings', value: '6', sub: 'key findings', tone: 'neutral' },
+    { id: 'm-5', label: 'Review', value: 'Passed', sub: 'evaluated & confirmed', tone: 'success' },
   ],
 };

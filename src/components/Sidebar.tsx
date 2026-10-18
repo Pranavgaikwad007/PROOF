@@ -66,7 +66,7 @@ export function Sidebar({
         {!collapsed ? (
           <div className="min-w-0">
             <p className="text-[14px] font-bold leading-none tracking-[0.06em] text-nav-text">PROOF</p>
-            <p className="mt-1 truncate text-[12px] font-medium leading-none text-nav-muted">
+            <p className="mt-1 text-[11px] font-medium leading-none text-nav-muted whitespace-nowrap">
               Evidence-Driven Assessment
             </p>
           </div>

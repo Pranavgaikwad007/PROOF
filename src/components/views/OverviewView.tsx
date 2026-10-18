@@ -2,15 +2,13 @@ import {
   ArrowRight,
   Bot,
   CheckCircle2,
-  Clock,
-  Code2,
   FileSearch,
   FileText,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
 import type { AssessmentData, NavItemId } from '../../types/assessment';
-import { Badge, Panel, QuietButton } from '../Panel';
+import { Badge, QuietButton } from '../Panel';
 import { SummaryMetrics } from '../SummaryMetrics';
 
 interface OverviewViewProps {
@@ -19,7 +17,7 @@ interface OverviewViewProps {
 }
 
 export function OverviewView({ data, onNavigate }: OverviewViewProps) {
-  const { candidate, summary, finding, events } = data;
+  const { candidate, summary, finding } = data;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto pb-4">
@@ -106,93 +104,38 @@ export function OverviewView({ data, onNavigate }: OverviewViewProps) {
       {/* Summary KPI Cards */}
       <SummaryMetrics metrics={summary} />
 
-      {/* Two Column Section: Competency Finding Preview & Quick Links */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Panel
-          title="Primary Competency Evaluation"
-          icon={FileSearch}
-          subtitle="Evaluated from telemetry"
-          className="h-full"
-          bodyClassName="flex flex-col justify-between p-4"
-        >
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h3 className="text-[15px] font-semibold text-ink">{finding.title}</h3>
+      {/* Primary Competency Strip (Full Width) */}
+      <div className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                Primary Evaluated Competency
+              </span>
               <Badge tone="success">{finding.status}</Badge>
               <Badge tone="neutral">Confidence · {finding.confidence}</Badge>
             </div>
-            <p className="mt-2.5 text-[14px] leading-relaxed text-muted">{finding.observation}</p>
+            <h3 className="text-[17px] font-bold text-ink sm:text-[18px]">{finding.title}</h3>
+            <p className="max-w-4xl text-[14px] leading-relaxed text-muted">{finding.observation}</p>
           </div>
-
-          <div className="mt-4 flex items-center justify-between border-t border-line pt-3 text-[13px]">
-            <span className="text-muted">{finding.evidence.length} linked evidence records</span>
+          <div className="shrink-0 pt-1">
             <button
               type="button"
               onClick={() => onNavigate('evidence-inspector')}
-              className="flex items-center gap-1.5 font-semibold text-accent hover:underline"
+              className="inline-flex min-h-[38px] items-center gap-2 rounded-[6px] bg-accent px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent"
             >
-              Inspect evidence diffs <ArrowRight size={14} />
+              <span>Inspect in Evidence Inspector</span>
+              <ArrowRight size={15} aria-hidden="true" />
             </button>
           </div>
-        </Panel>
-
-        <Panel
-          title="Quick Workspace Navigation"
-          icon={Code2}
-          subtitle="Explore assessment sections"
-          className="h-full"
-          bodyClassName="p-4"
-        >
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => onNavigate('buildtrail')}
-              className="flex min-h-[56px] items-center gap-3 rounded-[8px] border border-line bg-surface-2 p-3 text-left transition-all hover:border-line-strong hover:bg-surface hover:shadow-card focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <Clock size={18} className="text-muted" />
-              <div>
-                <p className="text-[14px] font-semibold text-ink">BuildTrail</p>
-                <p className="text-[12px] text-muted">{events.length} timeline events</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onNavigate('evidence-inspector')}
-              className="flex min-h-[56px] items-center gap-3 rounded-[8px] border border-line bg-surface-2 p-3 text-left transition-all hover:border-line-strong hover:bg-surface hover:shadow-card focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <FileSearch size={18} className="text-accent" />
-              <div>
-                <p className="text-[14px] font-semibold text-ink">Evidence Inspector</p>
-                <p className="text-[12px] text-muted">Diffs & graph workspace</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onNavigate('reports')}
-              className="flex min-h-[56px] items-center gap-3 rounded-[8px] border border-line bg-surface-2 p-3 text-left transition-all hover:border-line-strong hover:bg-surface hover:shadow-card focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <FileText size={18} className="text-success" />
-              <div>
-                <p className="text-[14px] font-semibold text-ink">Recruiter Report</p>
-                <p className="text-[12px] text-muted">Skill scorecard & rubric</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onNavigate('feedback')}
-              className="flex min-h-[56px] items-center gap-3 rounded-[8px] border border-line bg-surface-2 p-3 text-left transition-all hover:border-line-strong hover:bg-surface hover:shadow-card focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <Sparkles size={18} className="text-violet" />
-              <div>
-                <p className="text-[14px] font-semibold text-ink">Candidate Feedback</p>
-                <p className="text-[12px] text-muted">Strengths & growth paths</p>
-              </div>
-            </button>
-          </div>
-        </Panel>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-line pt-3 text-[13px] text-muted">
+          <span>{finding.evidence.length} linked evidence records</span>
+          <span>·</span>
+          <span>Validated against Python Task Manager test suite</span>
+          <span>·</span>
+          <span>Impact: {finding.impact}</span>
+        </div>
       </div>
     </div>
   );

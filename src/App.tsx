@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, CheckCircle2, FileText, Loader2 } from 'lucide-react';
+import {
+  Activity,
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  Loader2,
+} from 'lucide-react';
 import { AppLayout } from './components/AppLayout';
 import { AssessmentSwitcherModal } from './components/AssessmentSwitcherModal';
 import { BuildTrail, categoryMeta } from './components/BuildTrail';
 import { DecisionGraph } from './components/DecisionGraph';
 import { FindingDetails } from './components/FindingDetails';
+import { FindingsQueue } from './components/FindingsQueue';
 import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { RevisionDiff } from './components/RevisionDiff';
-import { SummaryMetrics } from './components/SummaryMetrics';
 import { QuietButton } from './components/Panel';
 import { AiInteractionsView } from './components/views/AiInteractionsView';
 import { FeedbackView } from './components/views/FeedbackView';
@@ -30,6 +38,7 @@ import type {
   CandidateInfo,
   DiffTab,
   EventCategory,
+  Finding,
   NavItemId,
   RevisionId,
   SupportingEvidenceItem,
@@ -111,6 +120,115 @@ export default function App() {
   const selectedBuildEvent = useMemo(() => {
     return data.events.find((e) => e.id === highlightedEventId) || data.events[0] || null;
   }, [data.events, highlightedEventId]);
+
+  const [selectedFindingId, setSelectedFindingId] = useState<string>('finding-03');
+  const [isGraphCollapsed, setIsGraphCollapsed] = useState(false);
+
+  const findingsQueueList = useMemo<Finding[]>(() => {
+    return [
+      data.finding,
+      {
+        id: 'finding-01',
+        title: 'Problem Solving & Decomposition',
+        status: 'Demonstrated',
+        observation:
+          'Decomposed the task manager requirements into discrete modules: task registration, completion status toggle, tag indexing, and query evaluation without architectural debt.',
+        confidence: 'High',
+        impact: 'High',
+        sourceLinks: 2,
+        aiContribution: {
+          label: 'Candidate Owned',
+          text: 'Architecture and method interfaces planned independently without coach prompting.',
+        },
+        uncertainty: {
+          label: 'Low uncertainty',
+          text: 'Directly evidenced by initial R1 commit structure (evt-001).',
+        },
+        tags: ['Decomposition', 'Architecture', 'Python'],
+        evidence: [
+          {
+            id: 'ev-failed-test' as any,
+            kind: 'revision',
+            title: 'Initial implementation R1',
+            meta: '14:35:10 · 27 lines added',
+            detail: 'Task manager data structures and initial method skeletons created.',
+            action: 'diff',
+            actionLabel: 'View Diff',
+            revision: 'R1',
+            eventId: 'evt-001',
+          },
+        ],
+      },
+      {
+        id: 'finding-02',
+        title: 'AI Collaboration & Review',
+        status: 'Demonstrated',
+        observation:
+          'Demonstrated disciplined use of AI under Level 3 Verify guidance: asked focused questions about empty-string boundary conventions rather than requesting solution code.',
+        confidence: 'High',
+        impact: 'Medium',
+        sourceLinks: 1,
+        aiContribution: {
+          label: 'Level 3 Verify',
+          text: 'AI provided standard convention guidance; candidate synthesized and implemented logic.',
+        },
+        uncertainty: {
+          label: 'Low uncertainty',
+          text: 'Full prompt and response recorded in session telemetry (evt-006, evt-007).',
+        },
+        tags: ['AI Policy', 'Verification', 'Discipline'],
+        evidence: [
+          {
+            id: 'ev-ai-exchange' as any,
+            kind: 'interaction',
+            title: 'Debugging exchange',
+            meta: '14:41:00 · 2 messages',
+            detail: 'Targeted inquiry on search empty query handling.',
+            action: 'interaction',
+            actionLabel: 'View Interaction',
+            eventId: 'evt-006',
+          },
+        ],
+      },
+      {
+        id: 'finding-04',
+        title: 'Code Understanding & Adaptability',
+        status: 'Demonstrated',
+        observation:
+          'Demonstrated high familiarity with Python collections and dictionaries, adapting task storage to support multi-attribute filtering and status mutations seamlessly.',
+        confidence: 'Medium',
+        impact: 'Medium',
+        sourceLinks: 1,
+        aiContribution: {
+          label: 'Candidate Owned',
+          text: 'All dictionary access and state mutations authored directly by the candidate.',
+        },
+        uncertainty: {
+          label: 'Low uncertainty',
+          text: 'Verified by revision R2 diff additions.',
+        },
+        tags: ['Data Structures', 'Python', 'State'],
+        evidence: [
+          {
+            id: 'ev-revision-r2' as any,
+            kind: 'revision',
+            title: 'Corrective code revision R2',
+            meta: '14:48:30 · +7 −3',
+            detail: 'Updated dictionary value iteration to return all tasks when query is empty.',
+            action: 'diff',
+            actionLabel: 'View Diff',
+            revision: 'R2',
+            eventId: 'evt-008',
+          },
+        ],
+      },
+    ];
+  }, [data.finding]);
+
+  const activeFinding = useMemo(() => {
+    return findingsQueueList.find((f) => f.id === selectedFindingId) || data.finding;
+  }, [findingsQueueList, selectedFindingId, data.finding]);
+
   const [assessmentsList, setAssessmentsList] = useState<CandidateInfo[]>([
     fallbackAssessment.candidate,
   ]);
@@ -232,6 +350,18 @@ export default function App() {
       setIsFindingDrawerOpen(false);
     }
   }, []);
+
+  const handleSelectFinding = useCallback((findingId: string) => {
+    setSelectedFindingId(findingId);
+    const found = findingsQueueList.find((f) => f.id === findingId);
+    if (found && found.evidence.length > 0) {
+      const firstEv = found.evidence[0];
+      setSelectedEvidenceId(firstEv.id);
+      if (firstEv.revision) setSelectedRevision(firstEv.revision);
+      if (firstEv.eventId) setHighlightedEventId(firstEv.eventId);
+      setActiveTab(firstEv.action === 'output' ? 'tests' : firstEv.action === 'diff' ? 'diff' : 'ai');
+    }
+  }, [findingsQueueList]);
 
   const handleNavSelect = useCallback((id: NavItemId) => {
     setActiveNav(id);
@@ -396,24 +526,19 @@ export default function App() {
 
       {!isLoading && activeNav === 'evidence-inspector' && (
         <div className="flex h-full min-h-0 flex-1 flex-col">
-          {/* Top KPI Metrics Row */}
-          <div className="shrink-0">
-            <SummaryMetrics metrics={data.summary} />
-          </div>
-
           {/* Quick drawer banner when screen < 1440px */}
           {!isWideScreen && !isFocusMode ? (
             <div className="mb-3 flex items-center justify-between rounded-card border border-line bg-surface px-4 py-2.5 shadow-sm">
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-semibold text-ink">Primary Finding:</span>
-                <span className="truncate text-[13px] text-muted">{data.finding.title}</span>
+                <span className="text-[13px] font-semibold text-ink">Selected Finding:</span>
+                <span className="truncate text-[13px] text-muted">{activeFinding.title}</span>
               </div>
               <QuietButton
                 onClick={() => setIsFindingDrawerOpen(true)}
                 title="Open Finding Details Drawer"
                 className="min-h-[32px] px-3.5 text-[13px] font-semibold"
               >
-                Inspect Finding ({data.finding.evidence.length} evidence)
+                Inspect Finding Details ({activeFinding.evidence.length} items)
               </QuietButton>
             </div>
           ) : null}
@@ -430,75 +555,135 @@ export default function App() {
                 aiExchanges={data.aiExchanges}
                 focusAnnotation={selectedEvidenceId !== null}
                 isFocusMode={isFocusMode}
-                onToggleFocusMode={() => setIsFocusMode(false)}
+                onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
               />
             </div>
           ) : isWideScreen ? (
-            /* Full 4-zone Workspace (>= 1440px) */
-            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:min-h-0 xl:grid-cols-[300px_minmax(480px,1fr)_380px]">
+            /* Full Workspace (>= 1440px): Findings Queue | Collapsible Graph + Code Revision Inspector | Finding Details */
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 xl:min-h-0 xl:grid-cols-[280px_minmax(480px,1fr)_380px]">
               <div className="order-2 flex h-full min-h-[400px] min-w-0 xl:order-1 xl:min-h-0">
-                <BuildTrail
-                  events={data.events}
-                  activeCategories={activeCategories}
-                  onToggleCategory={handleToggleCategory}
-                  onClearFilters={handleClearFilters}
-                  highlightedEventId={highlightedEventId}
-                  onSelectEvent={handleSelectEvent}
+                <FindingsQueue
+                  findings={findingsQueueList}
+                  selectedFindingId={activeFinding.id}
+                  onSelectFinding={handleSelectFinding}
                 />
               </div>
 
-              <div className="order-1 flex h-full min-h-0 min-w-0 flex-col gap-4 lg:order-1 lg:col-span-2 xl:order-2 xl:col-span-1">
-                <DecisionGraph graph={graph} theme={theme} onSelectEventId={handleGraphSelect} />
-                <RevisionDiff
-                  revisions={data.revisions}
-                  selectedRevision={selectedRevision}
-                  onRevisionChange={setSelectedRevision}
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                  testRuns={data.testRuns}
-                  aiExchanges={data.aiExchanges}
-                  focusAnnotation={selectedEvidenceId !== null}
-                  isFocusMode={isFocusMode}
-                  onToggleFocusMode={() => setIsFocusMode(true)}
-                />
+              <div className="order-1 flex h-full min-h-0 min-w-0 flex-col gap-3 lg:order-1 lg:col-span-2 xl:order-2 xl:col-span-1">
+                {/* Collapsible Decision Graph */}
+                <div className="shrink-0 rounded-card border border-line bg-surface shadow-card overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-line px-4 py-2 bg-surface-2/60">
+                    <div className="flex items-center gap-2">
+                      <Activity size={15} className="text-accent" />
+                      <span className="text-[12px] font-bold uppercase tracking-wider text-ink">
+                        Decision Graph Flow
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsGraphCollapsed((prev) => !prev)}
+                      className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted hover:text-ink transition-colors"
+                    >
+                      {isGraphCollapsed ? (
+                        <>
+                          <span>Expand Graph</span>
+                          <ChevronDown size={14} />
+                        </>
+                      ) : (
+                        <>
+                          <span>Collapse Graph</span>
+                          <ChevronUp size={14} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  {!isGraphCollapsed && (
+                    <DecisionGraph graph={graph} theme={theme} onSelectEventId={handleGraphSelect} />
+                  )}
+                </div>
+
+                <div className="min-h-0 flex-1">
+                  <RevisionDiff
+                    revisions={data.revisions}
+                    selectedRevision={selectedRevision}
+                    onRevisionChange={setSelectedRevision}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    testRuns={data.testRuns}
+                    aiExchanges={data.aiExchanges}
+                    focusAnnotation={selectedEvidenceId !== null}
+                    isFocusMode={isFocusMode}
+                    onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
+                  />
+                </div>
               </div>
 
               <div className="order-3 flex h-full min-h-[400px] min-w-0 xl:min-h-0">
                 <FindingDetails
-                  finding={data.finding}
+                  finding={activeFinding}
                   selectedEvidenceId={selectedEvidenceId}
                   onSelectEvidence={handleEvidenceSelect}
                 />
               </div>
             </div>
           ) : (
-            /* 2-Column Workspace (< 1440px, e.g. 1366px laptop) */
-            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-[280px_minmax(480px,1fr)]">
+            /* 2-Column Workspace (< 1440px, e.g. 1366px laptop): Findings Queue | Collapsible Graph + Code Revision Inspector */
+            <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-[260px_minmax(0,1fr)]">
               <div className="flex h-full min-h-[400px] min-w-0 md:min-h-0">
-                <BuildTrail
-                  events={data.events}
-                  activeCategories={activeCategories}
-                  onToggleCategory={handleToggleCategory}
-                  onClearFilters={handleClearFilters}
-                  highlightedEventId={highlightedEventId}
-                  onSelectEvent={handleSelectEvent}
+                <FindingsQueue
+                  findings={findingsQueueList}
+                  selectedFindingId={activeFinding.id}
+                  onSelectFinding={handleSelectFinding}
                 />
               </div>
 
-              <div className="flex h-full min-h-0 min-w-0 flex-col gap-4">
-                <DecisionGraph graph={graph} theme={theme} onSelectEventId={handleGraphSelect} />
-                <RevisionDiff
-                  revisions={data.revisions}
-                  selectedRevision={selectedRevision}
-                  onRevisionChange={setSelectedRevision}
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                  testRuns={data.testRuns}
-                  aiExchanges={data.aiExchanges}
-                  focusAnnotation={selectedEvidenceId !== null}
-                  isFocusMode={isFocusMode}
-                  onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
-                />
+              <div className="flex h-full min-h-0 min-w-0 flex-col gap-3">
+                {/* Collapsible Decision Graph */}
+                <div className="shrink-0 rounded-card border border-line bg-surface shadow-card overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-line px-4 py-2 bg-surface-2/60">
+                    <div className="flex items-center gap-2">
+                      <Activity size={15} className="text-accent" />
+                      <span className="text-[12px] font-bold uppercase tracking-wider text-ink">
+                        Decision Graph Flow
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsGraphCollapsed((prev) => !prev)}
+                      className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted hover:text-ink transition-colors"
+                    >
+                      {isGraphCollapsed ? (
+                        <>
+                          <span>Expand Graph</span>
+                          <ChevronDown size={14} />
+                        </>
+                      ) : (
+                        <>
+                          <span>Collapse Graph</span>
+                          <ChevronUp size={14} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  {!isGraphCollapsed && (
+                    <DecisionGraph graph={graph} theme={theme} onSelectEventId={handleGraphSelect} />
+                  )}
+                </div>
+
+                <div className="min-h-0 flex-1">
+                  <RevisionDiff
+                    revisions={data.revisions}
+                    selectedRevision={selectedRevision}
+                    onRevisionChange={setSelectedRevision}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    testRuns={data.testRuns}
+                    aiExchanges={data.aiExchanges}
+                    focusAnnotation={selectedEvidenceId !== null}
+                    isFocusMode={isFocusMode}
+                    onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -514,7 +699,7 @@ export default function App() {
               />
               <div className="proof-fade-in relative z-10 h-full w-[380px] max-w-full bg-surface shadow-pop">
                 <FindingDetails
-                  finding={data.finding}
+                  finding={activeFinding}
                   selectedEvidenceId={selectedEvidenceId}
                   onSelectEvidence={handleEvidenceSelect}
                   onClose={() => setIsFindingDrawerOpen(false)}
@@ -523,7 +708,7 @@ export default function App() {
             </div>
           ) : null}
 
-          {/* Status bar — 12px #475569 on #F8FAFC with 6-8px padding per spec */}
+          {/* Status bar */}
           <div className="mt-3 flex shrink-0 items-center justify-between rounded-[6px] border border-line bg-surface-2 px-4 py-2 text-[12px] text-[#475569]">
             <p className="truncate">
               Evidence records observable actions, outputs, and timestamps captured during the assessment.
@@ -651,9 +836,6 @@ export default function App() {
           <div className="flex-1 overflow-hidden">
             <DecisionGraph graph={graph} theme={theme} onSelectEventId={handleGraphSelect} />
           </div>
-          <div className="shrink-0">
-            <SummaryMetrics metrics={data.summary} />
-          </div>
         </div>
       )}
 
@@ -678,26 +860,12 @@ export default function App() {
         />
       )}
 
-      {!isLoading && activeNav === 'code-revisions' && (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <RevisionDiff
-            revisions={data.revisions}
-            selectedRevision={selectedRevision}
-            onRevisionChange={setSelectedRevision}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            testRuns={data.testRuns}
-            aiExchanges={data.aiExchanges}
-            focusAnnotation={selectedEvidenceId !== null}
-          />
-        </div>
-      )}
-
       {!isLoading && activeNav === 'reports' && (
         <ReportsView
           data={data}
           onExport={handleExport}
           onExportMarkdown={handleExportMarkdown}
+          onNavigate={handleNavSelect}
         />
       )}
 

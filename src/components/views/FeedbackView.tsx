@@ -14,43 +14,43 @@ interface FeedbackViewProps {
 }
 
 export function FeedbackView({ data }: FeedbackViewProps) {
-  const { candidate, finding } = data;
+  const { candidate } = data;
 
   const strengths = [
     {
-      title: 'Targeted Debugging Inquiry (evt-006)',
+      title: 'Targeted Edge-Case Diagnosis',
       description:
-        "Rather than requesting full code solutions, you formulated a precise architectural inquiry regarding empty-query string semantics, clarifying that search_tasks('') should return all items instead of an empty list.",
+        'When your search implementation returned an empty list for blank queries, you quickly identified that empty query strings should return the complete catalog rather than zero items.',
     },
     {
-      title: 'Corrective Revision R2 & State Preservation',
+      title: 'Corrective Revision & State Preservation',
       description:
-        'In corrective revision R2, you rectified the empty-query handling and preserved active filter states (self.active_filter) across task status updates, achieving 5/5 automated test passes.',
+        'In your corrective revision, you resolved the empty-query handling and ensured that active filter states remain preserved across task status updates, achieving a 100% automated test pass rate.',
     },
     {
-      title: 'Effective Policy-Compliant AI Collaboration',
+      title: 'Disciplined AI Verification',
       description:
-        'You leveraged the AI Coach as an architectural sounding board under Level 3 Verify policy rather than a code generator, keeping your reasoning authentic and compliant with assessment policies.',
+        'You leveraged the AI Coach effectively under Level 3 Verify guidance—asking focused conceptual questions about API conventions rather than requesting solution code—keeping your problem solving authentic.',
     },
   ];
 
   const practiceRecommendations = [
     {
-      topic: 'Empty-Input Semantics in Filter/Search APIs',
+      topic: 'Empty-Input Semantics in Filter & Search APIs',
       action:
-        'Define defensive contracts for search and catalog queries when passed empty strings, whitespace, or null values to prevent unexpected empty result sets.',
+        'Define explicit boundary contracts for search and filter functions when passed empty strings, whitespace, or null values to avoid unexpected empty collections.',
       difficulty: 'Medium',
     },
     {
       topic: 'Defensive Input Validation (Empty Titles & Unknown IDs)',
       action:
-        'Enforce boundary guards and raise domain errors when modifying non-existent task IDs or creating tasks with blank titles to enhance runtime robustness.',
+        'Enforce boundary guards and raise clear domain exceptions when attempting to update non-existent task IDs or when creating tasks with blank titles.',
       difficulty: 'Introductory',
     },
     {
-      topic: 'Test-First Edge-Case Coverage (Empty Query & Lists)',
+      topic: 'Test-First Edge-Case Coverage (Empty Query & Empty Catalogs)',
       action:
-        'Write parameterized boundary unit tests for empty query strings, empty task catalogs, and filter state transitions prior to code implementation.',
+        'Write parameterized boundary unit tests covering empty queries, empty catalog states, and filter state transitions before beginning implementation.',
       difficulty: 'Best Practice',
     },
   ];
@@ -80,8 +80,8 @@ export function FeedbackView({ data }: FeedbackViewProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        {/* Identified Strengths */}
-        <Panel title="Identified Engineering Strengths" icon={Sparkles} subtitle="Validated from session telemetry">
+        {/* Identified Strengths (2-3 items) */}
+        <Panel title="Identified Engineering Strengths" icon={Sparkles} subtitle="Demonstrated during the session">
           <div className="space-y-3.5 p-4">
             {strengths.map((s, idx) => (
               <div key={idx} className="rounded-card border border-line bg-surface-2 p-4">
@@ -95,7 +95,7 @@ export function FeedbackView({ data }: FeedbackViewProps) {
           </div>
         </Panel>
 
-        {/* Practice Recommendations */}
+        {/* Practice Recommendations (2-3 items with difficulty tags) */}
         <Panel title="Recommended Practice & Next Steps" icon={Compass} subtitle="Curated skill enhancements">
           <div className="space-y-3.5 p-4">
             {practiceRecommendations.map((rec, idx) => (
@@ -114,14 +114,19 @@ export function FeedbackView({ data }: FeedbackViewProps) {
         </Panel>
       </div>
 
-      {/* Evaluated Competency Summary */}
-      <Panel title="Demonstrated Competency Snapshot" icon={Award} subtitle="Based on observation record">
-        <div className="p-5">
+      {/* Plain Competency Snapshot (No weights, no confidence scores, no evt-ID jargon) */}
+      <Panel title="Demonstrated Competency Snapshot" icon={Award} subtitle="Plain summary of your session performance">
+        <div className="p-5 space-y-2.5">
           <div className="flex items-center gap-2.5">
-            <h3 className="text-[15px] font-semibold text-ink">{finding.title}</h3>
-            <Badge tone="success">{finding.status}</Badge>
+            <h3 className="text-[16px] font-bold text-ink">Validation & Edge-Case Debugging</h3>
+            <Badge tone="success">Demonstrated</Badge>
           </div>
-          <p className="mt-2 text-[15px] leading-relaxed text-ink">{finding.observation}</p>
+          <p className="text-[14px] leading-relaxed text-ink">
+            During this assessment, you demonstrated strong analytical debugging and edge-case handling skills. When your initial implementation returned an empty list for empty search queries, you diagnosed the boundary condition, verified the expected behavior for search collections, and implemented a clean fix that returned all tasks while preserving active filter state.
+          </p>
+          <p className="text-[13px] leading-relaxed text-muted">
+            All five automated test scenarios passed upon your final revision, confirming full functional correctness and robust state management.
+          </p>
         </div>
       </Panel>
     </div>

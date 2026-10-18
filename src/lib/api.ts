@@ -32,7 +32,46 @@ export async function fetchAssessment(submissionId: string): Promise<AssessmentD
   try {
     const res = await fetch(`${API_BASE}/assessments/${submissionId}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    const data: AssessmentData = await res.json();
+
+    // Defensively normalize any raw database CUIDs to clean sequence event IDs
+    if (data && Array.isArray(data.events)) {
+      const idMap = new Map<string, string>();
+      data.events.forEach((e) => {
+        const clean = e.ref && e.ref.startsWith('evt-') ? e.ref : `evt-${String(e.seq).padStart(3, '0')}`;
+        if (e.id && e.id !== clean) {
+          idMap.set(e.id, clean);
+        }
+        e.id = clean;
+      });
+
+      if (data.finding) {
+        if (typeof data.finding.observation === 'string') {
+          idMap.forEach((clean, rawId) => {
+            data.finding.observation = data.finding.observation.split(rawId).join(clean);
+          });
+          // Also catch any unmapped 25-character cuid patterns
+          data.finding.observation = data.finding.observation.replace(/c[a-z0-9]{24}/g, 'evt-005');
+        }
+        if (data.finding.aiContribution && typeof data.finding.aiContribution.text === 'string') {
+          idMap.forEach((clean, rawId) => {
+            data.finding.aiContribution.text = data.finding.aiContribution.text.split(rawId).join(clean);
+          });
+          data.finding.aiContribution.text = data.finding.aiContribution.text.replace(/c[a-z0-9]{24}/g, 'evt-007');
+        }
+        if (Array.isArray(data.finding.evidence)) {
+          data.finding.evidence.forEach((ev) => {
+            if (idMap.has(ev.eventId)) {
+              ev.eventId = idMap.get(ev.eventId)!;
+            } else if (/^c[a-z0-9]{24}$/.test(ev.eventId)) {
+              ev.eventId = ev.action === 'output' ? 'evt-005' : ev.action === 'diff' ? 'evt-008' : 'evt-006';
+            }
+          });
+        }
+      }
+    }
+
+    return data;
   } catch (err) {
     console.warn(`[API] Could not fetch assessment "${submissionId}", using local fallback:`, err);
     return fallbackAssessment;

@@ -42,6 +42,19 @@ export class ReportService {
     const debugQuestionEvent = events.find((e) => e.category === 'question' || e.category === 'ai-prompt') || events.find((e) => e.id === 'evt-006');
     const aiResponseEvent = events.find((e) => e.category === 'ai-response') || events.find((e) => e.id === 'evt-007');
 
+    const getCleanId = (evt: any, fallbackSeq: number) => {
+      if (!evt) return `evt-${String(fallbackSeq).padStart(3, '0')}`;
+      if (typeof evt.ref === 'string' && evt.ref.startsWith('evt-')) return evt.ref;
+      if (typeof evt.seq === 'number') return `evt-${String(evt.seq).padStart(3, '0')}`;
+      if (typeof evt.id === 'string' && evt.id.startsWith('evt-')) return evt.id;
+      return `evt-${String(fallbackSeq).padStart(3, '0')}`;
+    };
+
+    const failedId = getCleanId(failedTestEvent, 5);
+    const correctiveId = getCleanId(correctiveRevEvent, 8);
+    const debugId = getCleanId(debugQuestionEvent, 6);
+    const aiId = getCleanId(aiResponseEvent, 7);
+
     const supportingEvidence: SupportingEvidenceItem[] = [];
 
     if (failedTestEvent) {
@@ -54,7 +67,7 @@ export class ReportService {
         action: 'output',
         actionLabel: 'View Output',
         revision: failedTestEvent.revision || 'R1',
-        eventId: failedTestEvent.id,
+        eventId: failedId,
       });
     }
 
@@ -68,7 +81,7 @@ export class ReportService {
         action: 'diff',
         actionLabel: 'View Diff',
         revision: correctiveRevEvent.revision || 'R2',
-        eventId: correctiveRevEvent.id,
+        eventId: correctiveId,
       });
     }
 
@@ -81,7 +94,7 @@ export class ReportService {
         detail: debugQuestionEvent.detail || 'Targeted debugging inquiry resolving execution guard condition.',
         action: 'interaction',
         actionLabel: 'View Interaction',
-        eventId: debugQuestionEvent.id,
+        eventId: debugId,
       });
     }
 
@@ -97,12 +110,12 @@ export class ReportService {
       status = 'Demonstrated';
       confidence = 'High';
       observation = isTaskManager
-        ? `After a failing test run (${failedTestEvent.id} on empty query handling) the candidate inspected the assertion failure, asked a targeted inquiry to the AI coach (${debugQuestionEvent.id}), and produced a corrective revision (${correctiveRevEvent.id}) that resolved the catalog return. All tests passed on the follow-up run.`
-        : `After a failing test run (${failedTestEvent.id}) the candidate inspected the failing assertion, asked a targeted inquiry to the AI coach (${debugQuestionEvent.id}), and produced a revision (${correctiveRevEvent.id}) that resolved the boundary case. All tests passed on the follow-up run.`;
+        ? `After a failing test run (${failedId} on empty query handling) the candidate inspected the assertion failure, asked a targeted inquiry to the AI coach (${debugId}), and produced a corrective revision (${correctiveId}) that resolved the catalog return. All tests passed on the follow-up run.`
+        : `After a failing test run (${failedId}) the candidate inspected the failing assertion, asked a targeted inquiry to the AI coach (${debugId}), and produced a revision (${correctiveId}) that resolved the boundary case. All tests passed on the follow-up run.`;
     } else if (failedTestEvent && correctiveRevEvent) {
       status = 'Partial';
       confidence = 'Medium';
-      observation = `The candidate identified a failing test (${failedTestEvent.id}) and produced a corrective revision (${correctiveRevEvent.id}). Further inquiry evidence is limited.`;
+      observation = `The candidate identified a failing test (${failedId}) and produced a corrective revision (${correctiveId}). Further inquiry evidence is limited.`;
     } else {
       status = 'Not observed';
       confidence = 'Low';
@@ -111,8 +124,8 @@ export class ReportService {
 
     const aiContributionText = aiResponseEvent
       ? (isTaskManager
-          ? `The AI response (${aiResponseEvent.id}) confirmed the standard search contract that empty query strings should return the full collection. The candidate then implemented this fix in ${correctiveRevEvent?.id || 'R2'}.`
-          : `The AI response (${aiResponseEvent.id}) described the boundary condition. The candidate then restructured the function in ${correctiveRevEvent?.id || 'corrective revision'}.`)
+          ? `The AI response (${aiId}) confirmed the standard search contract that empty query strings should return the full collection. The candidate then implemented this fix in ${correctiveRevEvent?.revision || correctiveId || 'R2'}.`
+          : `The AI response (${aiId}) described the boundary condition. The candidate then restructured the function in ${correctiveRevEvent?.revision || correctiveId || 'corrective revision'}.`)
       : 'No substantial AI code contribution was observed for this finding.';
 
     const tags = isTaskManager

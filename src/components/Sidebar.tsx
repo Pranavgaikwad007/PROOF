@@ -145,6 +145,7 @@ export function Sidebar({
               <li key={item.id}>
                 <button
                   type="button"
+                  data-nav-id={item.id}
                   onClick={() => onNavSelect(item.id)}
                   title={item.label}
                   aria-current={active ? 'page' : undefined}

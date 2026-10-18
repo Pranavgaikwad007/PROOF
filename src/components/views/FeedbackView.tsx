@@ -56,9 +56,9 @@ export function FeedbackView({ data }: FeedbackViewProps) {
   ];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col space-y-4 overflow-y-auto pb-4">
+    <div className="flex h-full min-h-0 flex-1 flex-col space-y-4 overflow-y-auto pb-12 pr-1 scroll-smooth">
       {/* Header Banner */}
-      <div className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
+      <div className="shrink-0 rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
         <div className="flex items-start gap-4">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violetSoft text-violet">
             <MessageSquare size={22} strokeWidth={2.2} />
@@ -79,9 +79,9 @@ export function FeedbackView({ data }: FeedbackViewProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="grid shrink-0 grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Identified Strengths (2-3 items) */}
-        <Panel title="Identified Engineering Strengths" icon={Sparkles} subtitle="Demonstrated during the session">
+        <Panel className="shrink-0" title="Identified Engineering Strengths" icon={Sparkles} subtitle="Demonstrated during the session">
           <div className="space-y-3.5 p-4">
             {strengths.map((s, idx) => (
               <div key={idx} className="rounded-card border border-line bg-surface-2 p-4">
@@ -96,7 +96,7 @@ export function FeedbackView({ data }: FeedbackViewProps) {
         </Panel>
 
         {/* Practice Recommendations (2-3 items with difficulty tags) */}
-        <Panel title="Recommended Practice & Next Steps" icon={Compass} subtitle="Curated skill enhancements">
+        <Panel className="shrink-0" title="Recommended Practice & Next Steps" icon={Compass} subtitle="Curated skill enhancements">
           <div className="space-y-3.5 p-4">
             {practiceRecommendations.map((rec, idx) => (
               <div key={idx} className="rounded-card border border-line bg-surface-2 p-4">
@@ -115,7 +115,7 @@ export function FeedbackView({ data }: FeedbackViewProps) {
       </div>
 
       {/* Plain Competency Snapshot (No weights, no confidence scores, no evt-ID jargon) */}
-      <Panel title="Demonstrated Competency Snapshot" icon={Award} subtitle="Plain summary of your session performance">
+      <Panel className="shrink-0" title="Demonstrated Competency Snapshot" icon={Award} subtitle="Plain summary of your session performance">
         <div className="p-5 space-y-2.5">
           <div className="flex items-center gap-2.5">
             <h3 className="text-[16px] font-bold text-ink">Validation & Edge-Case Debugging</h3>

@@ -79,6 +79,19 @@ function getMetricStyle(metric: SummaryMetric): ToneStyle {
   return neutralStyle;
 }
 
+const captions: Record<string, string> = {
+  'm-1': '5/5 passed',
+  'm-2': 'of total duration',
+  'm-3': '80% linked',
+  'm-4': '6 findings',
+  'm-5': 'evaluated',
+  Tests: '5/5 passed',
+  Duration: 'of total duration',
+  Coverage: '80% linked',
+  Findings: '6 findings',
+  Review: 'evaluated',
+};
+
 export function SummaryMetrics({ metrics }: { metrics: SummaryMetric[] }) {
   const displayMetrics = metrics.slice(0, 5);
 
@@ -90,6 +103,7 @@ export function SummaryMetrics({ metrics }: { metrics: SummaryMetric[] }) {
           const tone = getMetricStyle(metric);
           const Icon = metricIcons[metric.id] ?? BarChart3;
           const label = shortLabels[metric.label] || shortLabels[metric.id] || metric.label;
+          const caption = captions[metric.id] || captions[label] || metric.sub;
 
           return (
             <article
@@ -103,19 +117,19 @@ export function SummaryMetrics({ metrics }: { metrics: SummaryMetric[] }) {
                 <Icon size={19} strokeWidth={2.2} className={tone.icon} />
               </span>
               <div className="flex min-w-0 flex-1 flex-col justify-center">
-                {/* Line 1: Big value (22-24px bold, nowrap, never ellipsize) */}
+                {/* Line 1: Label (1-2 words max, 12-13px uppercase tracking-wider) */}
+                <div className="text-[12px] font-semibold uppercase tracking-wider text-muted whitespace-nowrap">
+                  {label}
+                </div>
+                {/* Line 2: Big value (22-24px bold, nowrap, never ellipsize) */}
                 <div
-                  className={`text-[22px] sm:text-[24px] font-bold leading-tight tracking-tight whitespace-nowrap ${tone.text}`}
+                  className={`mt-0.5 text-[22px] sm:text-[24px] font-bold leading-tight tracking-tight whitespace-nowrap ${tone.text}`}
                 >
                   {metric.value}
                 </div>
-                {/* Line 2: Small label UNDER it (13px) */}
-                <div className="mt-0.5 text-[13px] font-semibold text-ink/80 whitespace-nowrap">
-                  {label}
-                </div>
-                {/* Line 3: Tiny support caption */}
+                {/* Line 3: Caption */}
                 <div className="mt-0.5 text-[12px] text-muted whitespace-nowrap">
-                  {metric.sub}
+                  {caption}
                 </div>
               </div>
             </article>

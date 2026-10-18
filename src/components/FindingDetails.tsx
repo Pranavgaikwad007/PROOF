@@ -1,4 +1,4 @@
-import { Bot, CircleDot, FileSearch, HelpCircle, Link2, Tag, X } from 'lucide-react';
+import { Bot, CircleDot, FileSearch, HelpCircle, Tag, X } from 'lucide-react';
 import type { Finding, SupportingEvidenceItem } from '../types/assessment';
 import { Badge, Panel } from './Panel';
 import { SupportingEvidence } from './SupportingEvidence';
@@ -41,10 +41,6 @@ export function FindingDetails({
             <CircleDot size={10} strokeWidth={3} aria-hidden="true" />
             {finding.status}
           </Badge>
-          <span className="hidden items-center gap-1 font-mono text-[12px] text-muted sm:flex">
-            <Link2 size={13} aria-hidden="true" />
-            {finding.sourceLinks} sources
-          </span>
           {onClose ? (
             <button
               type="button"
@@ -70,9 +66,6 @@ export function FindingDetails({
           <Badge tone={finding.impact === 'High' ? 'danger' : 'neutral'}>
             Impact · {finding.impact}
           </Badge>
-          <span className="ml-auto font-mono text-[12px] text-muted">
-            {finding.evidence.length} linked records
-          </span>
         </div>
       </div>
 
@@ -91,9 +84,8 @@ export function FindingDetails({
         <section className="rounded-[8px] border border-line bg-surface p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-[12px] font-bold uppercase tracking-wider text-[#475569]">
-              Supporting Evidence
+              Supporting Evidence · {finding.evidence.length} items
             </h3>
-            <span className="text-[12px] text-muted">{finding.evidence.length} items</span>
           </div>
           <div className="mt-3">
             <SupportingEvidence

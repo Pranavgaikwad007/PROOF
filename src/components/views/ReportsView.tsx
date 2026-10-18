@@ -4,6 +4,7 @@ import {
   CircleDot,
   Download,
   FileCheck2,
+  FileText,
   HelpCircle,
   Link2,
 } from 'lucide-react';
@@ -13,16 +14,17 @@ import { Badge, Panel, QuietButton } from '../Panel';
 interface ReportsViewProps {
   data: AssessmentData;
   onExport: () => void;
+  onExportMarkdown?: () => void;
 }
 
-export function ReportsView({ data, onExport }: ReportsViewProps) {
+export function ReportsView({ data, onExport, onExportMarkdown }: ReportsViewProps) {
   const { candidate, finding } = data;
 
   const rubricWeights = [
     { label: 'Functional Correctness', weight: '30%', score: '100%' },
-    { label: 'Problem Solving & Algorithms', weight: '20%', score: '90%' },
+    { label: 'Problem Solving & Decomposition', weight: '20%', score: '90%' },
     { label: 'Debugging & Validation', weight: '20%', score: '95%' },
-    { label: 'AI Collaboration & Efficiency', weight: '15%', score: '85%' },
+    { label: 'AI Collaboration & Review', weight: '15%', score: '85%' },
     { label: 'Code Understanding & Adaptability', weight: '15%', score: '90%' },
   ];
 
@@ -44,23 +46,30 @@ export function ReportsView({ data, onExport }: ReportsViewProps) {
             <strong className="text-ink">{candidate.duration}</strong>
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2.5">
           <QuietButton icon={Download} onClick={onExport} primary>
-            Export Report (Markdown)
+            Export Report (PDF)
           </QuietButton>
+          {onExportMarkdown ? (
+            <QuietButton icon={FileText} onClick={onExportMarkdown} title="Export Markdown summary">
+              Export .md
+            </QuietButton>
+          ) : null}
         </div>
       </div>
 
       {/* Rubric Breakdown Card */}
       <Panel title="Evaluation Rubric & Weightings" icon={Award} subtitle="Objective competency scoring">
-        <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3.5 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {rubricWeights.map((rw) => (
-            <div key={rw.label} className="rounded-[8px] border border-line bg-surface-2 p-3.5 shadow-sm">
-              <span className="text-[12px] font-semibold uppercase tracking-wider text-muted">
-                Weight: {rw.weight}
-              </span>
-              <p className="mt-1 text-[13px] sm:text-[14px] font-semibold text-ink">{rw.label}</p>
-              <p className="mt-2 text-[18px] sm:text-[20px] font-bold text-success">{rw.score}</p>
+            <div key={rw.label} className="flex flex-col justify-between rounded-[8px] border border-line bg-surface-2 p-4 shadow-sm">
+              <div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  WEIGHT {rw.weight}
+                </span>
+                <p className="mt-1.5 min-h-[42px] text-[14px] font-semibold leading-snug text-ink">{rw.label}</p>
+              </div>
+              <p className="mt-3 text-[20px] font-bold text-success">{rw.score}</p>
             </div>
           ))}
         </div>

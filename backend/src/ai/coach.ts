@@ -19,7 +19,7 @@ export class AiCoachService {
     if (lower.includes('why does my') || lower.includes('fails') || lower.includes('error') || lower.includes('assertion') || lower.includes('debug')) {
       return ASSISTANCE_LEVELS.VERIFY;
     }
-    if (lower.includes('approach') || lower.includes('how should i structure') || lower.includes('algorithm') || lower.includes('is binary search')) {
+    if (lower.includes('approach') || lower.includes('how should i structure') || lower.includes('algorithm') || lower.includes('empty query') || lower.includes('filter')) {
       return ASSISTANCE_LEVELS.GUIDE;
     }
     return ASSISTANCE_LEVELS.CLARIFY;
@@ -126,14 +126,12 @@ export class AiCoachService {
     // If Level 4 is requested but policy blocks it:
     if (this.detectRequestedLevel(prompt) === 4 && context.aiPolicyLevel < 4) {
       reply = `Policy Notice: The assessment AI policy is set to Level ${context.aiPolicyLevel} (guidance & verification only). Full code generation is restricted. However, conceptually: review your conditional branch logic and test against boundary inputs.`;
-    } else if (lower.includes('binary search') || lower.includes('search_range') || lower.includes('first and last')) {
-      if (effectiveLevel === 2) {
-        reply = 'Binary search is appropriate for a sorted array. A common pattern is two passes: one biased toward the left bound and one toward the right bound, each returning an index or -1.';
-      } else {
-        reply = 'Your guard is `while left < right`, so the iteration ends when left and right are equal without evaluating that index. You also only track `first`, so the pair can never be complete. Run the search twice with a helper that accepts a flag, biasing `right = mid - 1` for the first occurrence and `left = mid + 1` for the last.';
-      }
-    } else if (lower.includes('why does my loop stop') || lower.includes('[-1, -1] instead of [2, 2]')) {
-      reply = 'Your guard is `while left < right`, so the iteration ends when left and right are equal without evaluating that index. You also only track `first`, so the pair can never be complete. Run the search twice with a helper that accepts a flag, biasing `right = mid - 1` for the first occurrence and `left = mid + 1` for the last.';
+    } else if (lower.includes('empty query') || lower.includes('empty search') || lower.includes('whitespace')) {
+      reply = 'In your search implementation, checking `if not query or not query.strip():` should return all tasks (`list(self.tasks.values())`) instead of an empty list. When a user clears or leaves the search input blank, standard UX convention is to present the full task catalog rather than zero items.';
+    } else if (lower.includes('filter') || lower.includes('state preservation') || lower.includes('preserve')) {
+      reply = 'To preserve the active status filter across updates, store `self.active_filter = None` on initialization, update it during `filter_tasks(status)`, and ensure `update_task()` does not unintentionally reset or wipe this filter state.';
+    } else if (lower.includes('task') || lower.includes('search_tasks')) {
+      reply = 'For the TaskManager class, ensure task dictionaries preserve `id`, `title`, `status`, and `priority`. Filter operations should return shallow copies or filtered lists without mutating stored task objects.';
     } else if (lower.includes('task') || lower.includes('empty query') || lower.includes('filter')) {
       if (lower.includes('empty query') || lower.includes('empty search')) {
         reply = 'In your search implementation, checking `if not query:` should return all tasks instead of an empty list. When a user clears or leaves the search box blank, the expected UX convention is to display the unfiltered (or status-filtered) task catalog rather than zero items.';

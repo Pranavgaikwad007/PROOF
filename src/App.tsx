@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 import { AppLayout } from './components/AppLayout';
 import { AssessmentSwitcherModal } from './components/AssessmentSwitcherModal';
 import { BuildTrail, categoryMeta } from './components/BuildTrail';
@@ -18,9 +18,9 @@ import { assessment as fallbackAssessment } from './data/assessment';
 import {
   fetchAssessment,
   fetchAssessments,
-  fetchReportMarkdown,
   fetchShareLink,
 } from './lib/api';
+import { exportReportPdf } from './lib/exportPdf';
 import { buildReportMarkdown, downloadTextFile } from './lib/exportReport';
 import { applyTheme, getInitialTheme } from './lib/theme';
 import type {
@@ -98,11 +98,19 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
 
+  useEffect(() => {
+    applyTheme(theme, false);
+  }, [theme]);
+
   // Live Data State
   const [currentSubmissionId, setCurrentSubmissionId] = useState<string>(
     () => getHashSubmissionId() || 'ASM-3088-TASK',
   );
   const [data, setData] = useState<AssessmentData>(fallbackAssessment);
+
+  const selectedBuildEvent = useMemo(() => {
+    return data.events.find((e) => e.id === highlightedEventId) || data.events[0] || null;
+  }, [data.events, highlightedEventId]);
   const [assessmentsList, setAssessmentsList] = useState<CandidateInfo[]>([
     fallbackAssessment.candidate,
   ]);
@@ -239,12 +247,18 @@ export default function App() {
     showToast(`Switched to assessment ${submissionId}`);
   }, [showToast]);
 
-  const handleExport = useCallback(async () => {
+  const handleExport = useCallback(() => {
     try {
-      let markdown = await fetchReportMarkdown(data.candidate.submissionId);
-      if (!markdown) {
-        markdown = buildReportMarkdown(data);
-      }
+      const filename = exportReportPdf(data);
+      showToast(`Exported PDF: ${filename}`);
+    } catch (err: any) {
+      showToast(`Export failed: ${err.message || 'Could not generate PDF'}`);
+    }
+  }, [data, showToast]);
+
+  const handleExportMarkdown = useCallback(() => {
+    try {
+      const markdown = buildReportMarkdown(data);
       downloadTextFile(
         `proof-report-${data.candidate.submissionId}.md`,
         markdown,
@@ -252,13 +266,7 @@ export default function App() {
       );
       showToast('Assessment report downloaded as Markdown.');
     } catch {
-      const fallbackMd = buildReportMarkdown(data);
-      downloadTextFile(
-        `proof-report-${data.candidate.submissionId}.md`,
-        fallbackMd,
-        'text/markdown;charset=utf-8',
-      );
-      showToast('Report downloaded as Markdown.');
+      showToast('Failed to download Markdown report.');
     }
   }, [data, showToast]);
 
@@ -489,7 +497,7 @@ export default function App() {
                   aiExchanges={data.aiExchanges}
                   focusAnnotation={selectedEvidenceId !== null}
                   isFocusMode={isFocusMode}
-                  onToggleFocusMode={() => setIsFocusMode(true)}
+                  onToggleFocusMode={() => setIsFocusMode((prev) => !prev)}
                 />
               </div>
             </div>
@@ -542,19 +550,96 @@ export default function App() {
               highlightedEventId={highlightedEventId}
               onSelectEvent={handleSelectEvent}
             />
-            <div className="flex h-full min-h-0 flex-col gap-2.5">
-              <DecisionGraph graph={graph} theme={theme} onSelectEventId={handleGraphSelect} />
-              <div className="min-h-0 flex-1 overflow-hidden">
-                <RevisionDiff
-                  revisions={data.revisions}
-                  selectedRevision={selectedRevision}
-                  onRevisionChange={setSelectedRevision}
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                  testRuns={data.testRuns}
-                  aiExchanges={data.aiExchanges}
-                  focusAnnotation={selectedEvidenceId !== null}
-                />
+            <div className="flex h-full min-h-0 flex-col gap-3">
+              <div className="shrink-0">
+                <DecisionGraph graph={graph} theme={theme} onSelectEventId={handleGraphSelect} />
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                {selectedBuildEvent ? (
+                  <div className="rounded-card border border-line bg-surface p-5 shadow-card">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-line pb-4">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <span
+                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[7px] border ${
+                            categoryMeta[selectedBuildEvent.category]?.chip || 'border-line bg-surface-2'
+                          }`}
+                        >
+                          {(() => {
+                            const IconComponent = categoryMeta[selectedBuildEvent.category]?.icon || FileText;
+                            return <IconComponent size={16} className={categoryMeta[selectedBuildEvent.category]?.iconClass} />;
+                          })()}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                              {categoryMeta[selectedBuildEvent.category]?.label || selectedBuildEvent.category}
+                            </span>
+                            <span className="font-mono text-[12px] text-muted">· {selectedBuildEvent.time}</span>
+                            {selectedBuildEvent.revision ? (
+                              <span className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-ink">
+                                {selectedBuildEvent.revision}
+                              </span>
+                            ) : null}
+                          </div>
+                          <h3 className="text-[16px] font-semibold text-ink mt-0.5">
+                            {selectedBuildEvent.title}
+                          </h3>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveNav('evidence-inspector');
+                          setHighlightedEventId(selectedBuildEvent.id);
+                          if (selectedBuildEvent.revision) setSelectedRevision(selectedBuildEvent.revision);
+                          if (selectedBuildEvent.evidenceId) {
+                            setSelectedEvidenceId(selectedBuildEvent.evidenceId);
+                            const item = data.finding.evidence.find((e) => e.id === selectedBuildEvent.evidenceId);
+                            if (item) setActiveTab(item.action === 'output' ? 'tests' : item.action === 'diff' ? 'diff' : 'ai');
+                          }
+                        }}
+                        className="inline-flex min-h-[36px] shrink-0 items-center gap-1.5 rounded-[6px] bg-accent px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition-colors hover:bg-accent/90"
+                      >
+                        <span>Inspect evidence</span>
+                        <ArrowRight size={14} aria-hidden="true" />
+                      </button>
+                    </div>
+
+                    <div className="mt-4 space-y-3.5">
+                      <div>
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-muted">
+                          Event Description & Telemetry Detail
+                        </h4>
+                        <p className="mt-1.5 text-[14px] leading-relaxed text-ink">
+                          {selectedBuildEvent.detail}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-1 text-[13px]">
+                        <div className="rounded-[6px] border border-line bg-surface-2/60 p-3">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Event ID</span>
+                          <p className="mt-0.5 font-mono text-[13px] font-semibold text-ink">{selectedBuildEvent.id}</p>
+                        </div>
+                        <div className="rounded-[6px] border border-line bg-surface-2/60 p-3">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-muted">Sequence</span>
+                          <p className="mt-0.5 font-mono text-[13px] font-semibold text-ink">#{selectedBuildEvent.seq}</p>
+                        </div>
+                      </div>
+
+                      {selectedBuildEvent.evidenceId ? (
+                        <div className="rounded-[6px] border border-accent/20 bg-accentSoft/30 p-3 text-[13px]">
+                          <span className="font-semibold text-accent">Linked to Competency Finding:</span>
+                          <span className="ml-1.5 text-ink">This event forms key observable telemetry supporting the Validation & Debugging finding.</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex h-48 flex-col items-center justify-center rounded-card border border-dashed border-line bg-surface-2/30 p-6 text-center text-muted">
+                    <p className="text-[14px] font-medium text-ink">No Event Selected</p>
+                    <p className="mt-1 text-[13px]">Click any event from the timeline or flow strip to inspect details.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -609,7 +694,11 @@ export default function App() {
       )}
 
       {!isLoading && activeNav === 'reports' && (
-        <ReportsView data={data} onExport={handleExport} />
+        <ReportsView
+          data={data}
+          onExport={handleExport}
+          onExportMarkdown={handleExportMarkdown}
+        />
       )}
 
       {!isLoading && activeNav === 'feedback' && (

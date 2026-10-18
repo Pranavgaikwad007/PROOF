@@ -119,9 +119,9 @@ export function TopBar({
       </span>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
-        <QuietButton icon={Download} onClick={onExport} title="Download evaluation report (Press E)">
-          <span className="hidden sm:inline">Export Report</span>
-          <span className="sm:hidden">Export</span>
+        <QuietButton icon={Download} onClick={onExport} title="Download evaluation report as PDF (Press E)">
+          <span className="hidden sm:inline">Export Report (PDF)</span>
+          <span className="sm:hidden">PDF</span>
         </QuietButton>
 
         <QuietButton icon={Share2} onClick={onShare} title="Copy shareable link">

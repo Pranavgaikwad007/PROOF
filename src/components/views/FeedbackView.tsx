@@ -18,39 +18,39 @@ export function FeedbackView({ data }: FeedbackViewProps) {
 
   const strengths = [
     {
-      title: 'Targeted Debugging Inquiry',
+      title: 'Targeted Debugging Inquiry (evt-006)',
       description:
-        'Instead of asking for full solutions, you asked precise questions targeting the loop termination invariant, allowing you to rapidly correct off-by-one errors.',
+        "Rather than requesting full code solutions, you formulated a precise architectural inquiry regarding empty-query string semantics, clarifying that search_tasks('') should return all items instead of an empty list.",
     },
     {
-      title: 'Boundary Condition Resilience',
+      title: 'Corrective Revision R2 & State Preservation',
       description:
-        'After identifying the failing upper-bound test case, you introduced a dual-biasing search helper that handles duplicates and edges gracefully.',
+        'In corrective revision R2, you rectified the empty-query handling and preserved active filter states (self.active_filter) across task status updates, achieving 5/5 automated test passes.',
     },
     {
-      title: 'Effective AI Collaboration',
+      title: 'Effective Policy-Compliant AI Collaboration',
       description:
-        'You leveraged the AI Coach as a sounding board rather than a code generator, keeping your reasoning authentic and compliant with assessment policies.',
+        'You leveraged the AI Coach as an architectural sounding board under Level 3 Verify policy rather than a code generator, keeping your reasoning authentic and compliant with assessment policies.',
     },
   ];
 
   const practiceRecommendations = [
     {
-      topic: 'Binary Search Edge Cases',
+      topic: 'Empty-Input Semantics in Filter/Search APIs',
       action:
-        'Practice problems involving shifted arrays and finding pivot elements to strengthen boundary pointer intuition.',
+        'Define defensive contracts for search and catalog queries when passed empty strings, whitespace, or null values to prevent unexpected empty result sets.',
       difficulty: 'Medium',
     },
     {
-      topic: 'State Preservation in Reactive UI',
+      topic: 'Defensive Input Validation (Empty Titles & Unknown IDs)',
       action:
-        'Review patterns for preserving query and filter states during asynchronous updates in CRUD applications.',
+        'Enforce boundary guards and raise domain errors when modifying non-existent task IDs or creating tasks with blank titles to enhance runtime robustness.',
       difficulty: 'Introductory',
     },
     {
-      topic: 'Test-Driven Edge Exploration',
+      topic: 'Test-First Edge-Case Coverage (Empty Query & Lists)',
       action:
-        'Write parameterized unit tests for empty strings, null inputs, and single-element collections prior to implementing core logic.',
+        'Write parameterized boundary unit tests for empty query strings, empty task catalogs, and filter state transitions prior to code implementation.',
       difficulty: 'Best Practice',
     },
   ];

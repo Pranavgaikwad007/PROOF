@@ -40,9 +40,9 @@ export function AiInteractionsView({
   };
 
   const samplePrompts = [
-    'How should I structure the binary search algorithm?',
-    'Why does my search fail on boundary or empty inputs?',
-    'Can you explain why `left < right` exits before the final element?',
+    'What is the expected behavior when search query is empty or whitespace?',
+    'How should filter state be preserved when updating task status or title?',
+    'Why does search_tasks("") return an empty list instead of all tasks?',
   ];
 
   return (
